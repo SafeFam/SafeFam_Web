@@ -1,19 +1,35 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { AxiosError } from 'axios'
+import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5'
 import logo from '../assets/logo.png'
+import { useAuth } from '../contexts/AuthContext'
+
+interface ApiErrorResponse {
+  status: number
+  message: string
+}
 
 export default function LoginPage() {
+  const navigate = useNavigate()
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
 
-  const handleLogin = () => {
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/
-    if (!passwordRegex.test(password)) {
-      setError('비밀번호는 영문+숫자 8자리 이상이어야 합니다.')
-      return
-    }
+  const { login } = useAuth()
+
+  const handleLogin = async () => {
     setError('')
-    // TODO: API 연동
+    try {
+      await login(phone, password)
+      navigate('/home')
+    } catch (err) {
+      const message = err instanceof AxiosError
+        ? (err.response?.data as ApiErrorResponse | undefined)?.message
+        : undefined
+      setError(message ?? '전화번호 또는 비밀번호가 일치하지 않습니다.')
+    }
   }
 
   return (
@@ -36,14 +52,24 @@ export default function LoginPage() {
         </div>
         <div className="flex flex-col gap-1">
           <label htmlFor="password" className="text-sm font-semibold text-t1">비밀번호</label>
-          <input
-            id="password"
-            type="password"
-            placeholder="비밀번호 입력"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-line text-t1 placeholder-t3 focus:outline-none focus:border-blue"
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="비밀번호 입력"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-line text-t1 placeholder-t3 focus:outline-none focus:border-blue"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-5 top-1/2 -translate-y-1/2 text-t3"
+              aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
+            >
+              {showPassword ? <IoEyeOutline size={18} /> : <IoEyeOffOutline size={18} />}
+            </button>
+          </div>
         </div>
         {error && <p className="text-high text-sm">{error}</p>}
         <button
