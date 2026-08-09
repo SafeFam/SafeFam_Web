@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import {
   IoCameraOutline,
   IoPencilOutline,
@@ -78,7 +78,7 @@ function maskPhone(phone: string): string {
 }
 
 export default function MyPage() {
-  const navigate = useNavigate()
+  const { logout } = useAuth()
   const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE)
   const [reports] = useState<ReportItem[]>(REPORT_ITEMS)
   const [whitelist, setWhitelist] = useState<WhitelistItem[]>(INITIAL_WHITELIST)
@@ -196,10 +196,9 @@ export default function MyPage() {
     setWhitelist((prev) => prev.filter((item) => item.id !== id))
   }
 
-  const handleLogout = () => {
-    // TODO: API 연동 — POST /api/v1/auth/logout
+  const handleLogout = async () => {
+    await logout()
     setIsLogoutConfirmOpen(false)
-    navigate('/login')
   }
 
   return (
