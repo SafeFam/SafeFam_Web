@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import HistoryPage from './pages/HistoryPage'
 import ChatPage from './pages/ChatPage'
+import FamilyPage from './pages/FamilyPage'
 
 function App() {
   return (
@@ -19,7 +20,7 @@ function App() {
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/history" element={<HistoryPage />} />
                 <Route path="/chat" element={<ChatPage />} />
-                <Route path="/family" element={<div>가족</div>} />
+                <Route path="/family" element={<FamilyPage />} />
                 <Route path="/mypage" element={<div>마이페이지</div>} />
               </Routes>
             </div>
