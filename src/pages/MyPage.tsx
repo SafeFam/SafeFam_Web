@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   IoCameraOutline,
@@ -52,43 +52,23 @@ const INITIAL_PROFILE: UserProfile = {
   profileImageUrl: null,
 }
 
-// TODO: API 연동 시 실제 신고 내역 요청으로 교체 — GET /api/v1/reports/me
+// TODO: API 연동 시 실제 신고 내역 요청으로 교체 — GET /api/v1/analyses/{analysisId}/report
 const REPORT_ITEMS: ReportItem[] = [
-  {
-    id: 'r1',
-    date: '2026-08-07',
-    summary: '택배 미수령 사칭 스미싱 문자를 신고했습니다.',
-    status: 'completed',
-  },
-  {
-    id: 'r2',
-    date: '2026-08-02',
-    summary: '가족 사칭 메신저 피싱 계정을 신고했습니다.',
-    status: 'reviewing',
-  },
-  {
-    id: 'r3',
-    date: '2026-07-25',
-    summary: '정부지원금 안내 사칭 사이트를 신고했습니다.',
-    status: 'pending',
-  },
-  {
-    id: 'r4',
-    date: '2026-07-10',
-    summary: '정상 발신 번호로 확인되어 신고가 반려되었습니다.',
-    status: 'rejected',
-  },
+  { id: 'r1', date: '2026-08-07', summary: '택배 미수령 사칭 스미싱 문자를 신고했습니다.', status: 'completed' },
+  { id: 'r2', date: '2026-08-02', summary: '가족 사칭 메신저 피싱 계정을 신고했습니다.', status: 'reviewing' },
+  { id: 'r3', date: '2026-07-25', summary: '정부지원금 안내 사칭 사이트를 신고했습니다.', status: 'pending' },
+  { id: 'r4', date: '2026-07-10', summary: '정상 발신 번호로 확인되어 신고가 반려되었습니다.', status: 'rejected' },
 ]
 
-// TODO: API 연동 시 실제 화이트리스트 요청으로 교체 — GET /api/v1/whitelist
+// TODO: API 연동 시 실제 화이트리스트 요청으로 교체 — GET /api/v1/whitelists
 const INITIAL_WHITELIST: WhitelistItem[] = [
   { id: 'w1', type: 'phone', value: '010-2222-3333', addedDate: '2026-06-01' },
   { id: 'w2', type: 'url', value: 'safefam.co.kr', addedDate: '2026-06-15' },
 ]
 
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+  const [year, month, day] = dateStr.split('-')
+  return `${year}.${month}.${day}`
 }
 
 function maskPhone(phone: string): string {
@@ -114,8 +94,23 @@ export default function MyPage() {
 
   const [whitelistType, setWhitelistType] = useState<WhitelistType>('phone')
   const [whitelistValue, setWhitelistValue] = useState('')
+  const [whitelistError, setWhitelistError] = useState<string | null>(null)
 
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
+
+  // ESC 키로 모달 닫기
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsPasswordModalOpen(false)
+        setIsLogoutConfirmOpen(false)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  // TODO: 모달 접근성 개선 — focus trap, 초기 포커스, 포커스 복원 추후 추가
 
   const handleStartEditNickname = () => {
     setNicknameInput(profile.nickname)
@@ -125,7 +120,7 @@ export default function MyPage() {
   const handleSaveNickname = () => {
     const trimmed = nicknameInput.trim()
     if (!trimmed) return
-    // TODO: API 연동 시 실제 닉네임 수정 요청으로 교체 — PATCH /api/v1/users/me
+    // TODO: API 연동 — PATCH /api/v1/users/me
     setProfile((prev) => ({ ...prev, nickname: trimmed }))
     setIsEditingNickname(false)
   }
@@ -136,7 +131,7 @@ export default function MyPage() {
   }
 
   const handleChangePhoto = () => {
-    // TODO: API 연동 시 실제 프로필 사진 업로드 요청으로 교체 — POST /api/v1/users/me/photo
+    // TODO: API 연동 시 파일 선택 및 프로필 사진 업로드 구현 — PATCH /api/v1/users/me
   }
 
   const openPasswordModal = () => {
@@ -148,26 +143,43 @@ export default function MyPage() {
   }
 
   const handleSubmitPasswordChange = () => {
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError('모든 항목을 입력해주세요.')
       return
     }
-    if (newPassword.length < 8) {
-      setPasswordError('새 비밀번호는 8자 이상이어야 해요.')
+    if (!passwordRegex.test(newPassword)) {
+      setPasswordError('새 비밀번호는 영문+숫자 8자리 이상이어야 해요.')
       return
     }
     if (newPassword !== confirmPassword) {
       setPasswordError('새 비밀번호가 일치하지 않아요.')
       return
     }
-    // TODO: API 연동 시 실제 비밀번호 변경 요청으로 교체 — PATCH /api/v1/users/me/password
+    // TODO: API 연동 — PATCH /api/v1/auth/password/reset
     setIsPasswordModalOpen(false)
   }
 
   const handleAddWhitelist = () => {
     const trimmed = whitelistValue.trim()
     if (!trimmed) return
-    // TODO: API 연동 시 실제 화이트리스트 추가 요청으로 교체 — POST /api/v1/whitelist
+
+    const isDuplicate = whitelist.some((item) => item.value === trimmed)
+    if (isDuplicate) {
+      setWhitelistError('이미 등록된 항목이에요.')
+      return
+    }
+
+    if (whitelistType === 'phone' && !/^010-\d{4}-\d{4}$/.test(trimmed)) {
+      setWhitelistError('전화번호 형식이 올바르지 않아요. (예: 010-1234-5678)')
+      return
+    }
+    if (whitelistType === 'url' && !/^[\w.-]+\.[a-z]{2,}/.test(trimmed)) {
+      setWhitelistError('URL 형식이 올바르지 않아요. (예: example.com)')
+      return
+    }
+
+    // TODO: API 연동 — POST /api/v1/whitelists
     const newItem: WhitelistItem = {
       id: `w${Date.now()}`,
       type: whitelistType,
@@ -176,15 +188,16 @@ export default function MyPage() {
     }
     setWhitelist((prev) => [newItem, ...prev])
     setWhitelistValue('')
+    setWhitelistError(null)
   }
 
   const handleDeleteWhitelist = (id: string) => {
-    // TODO: API 연동 시 실제 화이트리스트 삭제 요청으로 교체 — DELETE /api/v1/whitelist/{id}
+    // TODO: API 연동 — DELETE /api/v1/whitelists/{whitelistId}
     setWhitelist((prev) => prev.filter((item) => item.id !== id))
   }
 
   const handleLogout = () => {
-    // TODO: API 연동 시 실제 로그아웃 요청으로 교체 — POST /api/v1/auth/logout
+    // TODO: API 연동 — POST /api/v1/auth/logout
     setIsLogoutConfirmOpen(false)
     navigate('/login')
   }
@@ -284,25 +297,21 @@ export default function MyPage() {
           <div className="flex items-center gap-2">
             <div className="flex shrink-0 rounded-lg border border-line overflow-hidden">
               <button
-                onClick={() => setWhitelistType('phone')}
-                className={`px-3 py-1.5 text-xs font-semibold ${
-                  whitelistType === 'phone' ? 'bg-blue text-white' : 'bg-white text-t2'
-                }`}
+                onClick={() => { setWhitelistType('phone'); setWhitelistError(null) }}
+                className={`px-3 py-1.5 text-xs font-semibold ${whitelistType === 'phone' ? 'bg-blue text-white' : 'bg-white text-t2'}`}
               >
                 번호
               </button>
               <button
-                onClick={() => setWhitelistType('url')}
-                className={`px-3 py-1.5 text-xs font-semibold ${
-                  whitelistType === 'url' ? 'bg-blue text-white' : 'bg-white text-t2'
-                }`}
+                onClick={() => { setWhitelistType('url'); setWhitelistError(null) }}
+                className={`px-3 py-1.5 text-xs font-semibold ${whitelistType === 'url' ? 'bg-blue text-white' : 'bg-white text-t2'}`}
               >
                 URL
               </button>
             </div>
             <input
               value={whitelistValue}
-              onChange={(e) => setWhitelistValue(e.target.value)}
+              onChange={(e) => { setWhitelistValue(e.target.value); setWhitelistError(null) }}
               placeholder={whitelistType === 'phone' ? '010-0000-0000' : 'example.com'}
               className="min-w-0 flex-1 text-sm text-t1 bg-white border border-line rounded-lg px-3 py-1.5 outline-none focus:border-blue"
             />
@@ -314,6 +323,7 @@ export default function MyPage() {
               <IoAddOutline size={18} />
             </button>
           </div>
+          {whitelistError && <p className="text-xs text-high-text">{whitelistError}</p>}
 
           <div className="flex flex-col gap-2">
             {whitelist.length === 0 && (
@@ -360,50 +370,27 @@ export default function MyPage() {
           >
             <div className="flex items-center justify-between">
               <p className="text-base font-bold text-t1">비밀번호 변경</p>
-              <button
-                onClick={() => setIsPasswordModalOpen(false)}
-                className="text-t3 text-sm font-bold px-2"
-                aria-label="닫기"
-              >
-                ✕
-              </button>
+              <button onClick={() => setIsPasswordModalOpen(false)} className="text-t3 text-sm font-bold px-2" aria-label="닫기">✕</button>
             </div>
-
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-t2">현재 비밀번호</label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="text-sm text-t1 bg-white border border-line rounded-lg px-3 py-2 outline-none focus:border-blue"
-                />
+                <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="text-sm text-t1 bg-white border border-line rounded-lg px-3 py-2 outline-none focus:border-blue" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-t2">새 비밀번호</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="text-sm text-t1 bg-white border border-line rounded-lg px-3 py-2 outline-none focus:border-blue"
-                />
+                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                  className="text-sm text-t1 bg-white border border-line rounded-lg px-3 py-2 outline-none focus:border-blue" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-t2">새 비밀번호 확인</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="text-sm text-t1 bg-white border border-line rounded-lg px-3 py-2 outline-none focus:border-blue"
-                />
+                <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="text-sm text-t1 bg-white border border-line rounded-lg px-3 py-2 outline-none focus:border-blue" />
               </div>
               {passwordError && <p className="text-xs text-high-text">{passwordError}</p>}
             </div>
-
-            <button
-              onClick={handleSubmitPasswordChange}
-              className="w-full py-3 bg-blue text-white font-bold rounded-xl"
-            >
+            <button onClick={handleSubmitPasswordChange} className="w-full py-3 bg-blue text-white font-bold rounded-xl">
               변경하기
             </button>
           </div>
@@ -422,16 +409,12 @@ export default function MyPage() {
             <p className="text-sm font-semibold text-t1">로그아웃 하시겠어요?</p>
             <p className="text-xs text-t2">다시 로그인해야 서비스를 이용할 수 있어요.</p>
             <div className="flex gap-2">
-              <button
-                onClick={() => setIsLogoutConfirmOpen(false)}
-                className="flex-1 py-2.5 rounded-xl border border-line text-t2 font-semibold text-sm"
-              >
+              <button onClick={() => setIsLogoutConfirmOpen(false)}
+                className="flex-1 py-2.5 rounded-xl border border-line text-t2 font-semibold text-sm">
                 취소
               </button>
-              <button
-                onClick={handleLogout}
-                className="flex-1 py-2.5 rounded-xl bg-high text-white font-semibold text-sm"
-              >
+              <button onClick={handleLogout}
+                className="flex-1 py-2.5 rounded-xl bg-high text-white font-semibold text-sm">
                 로그아웃
               </button>
             </div>
