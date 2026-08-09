@@ -1,11 +1,18 @@
 import { useState } from 'react'
-import logo from '../assets/logo.png'  // 파일명 맞게 수정해
+import logo from '../assets/logo.png'
 
 export default function LoginPage() {
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
 
   const handleLogin = () => {
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/
+    if (!passwordRegex.test(password)) {
+      setError('비밀번호는 영문+숫자 8자리 이상이어야 합니다.')
+      return
+    }
+    setError('')
     // TODO: API 연동
   }
 
@@ -17,8 +24,9 @@ export default function LoginPage() {
 
       <div className="w-full max-w-sm flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-semibold text-t1">휴대전화 번호</label>
+          <label htmlFor="phone" className="text-sm font-semibold text-t1">휴대전화 번호</label>
           <input
+            id="phone"
             type="tel"
             placeholder="010-0000-0000"
             value={phone}
@@ -27,8 +35,9 @@ export default function LoginPage() {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-semibold text-t1">비밀번호</label>
+          <label htmlFor="password" className="text-sm font-semibold text-t1">비밀번호</label>
           <input
+            id="password"
             type="password"
             placeholder="비밀번호 입력"
             value={password}
@@ -36,6 +45,7 @@ export default function LoginPage() {
             className="w-full px-4 py-3 rounded-xl border border-line text-t1 placeholder-t3 focus:outline-none focus:border-blue"
           />
         </div>
+        {error && <p className="text-high text-sm">{error}</p>}
         <button
           onClick={handleLogin}
           className="w-full py-3 bg-blue text-white font-bold rounded-xl mt-2"
@@ -44,7 +54,7 @@ export default function LoginPage() {
         </button>
         <button
           onClick={() => {/* TODO: 비밀번호 재설정 */}}
-          className="text-sm text-t2 mt-3 hover:text-blue"
+          className="text-sm text-t2 mt-1 hover:text-blue"
         >
           비밀번호를 잊으셨나요?
         </button>
