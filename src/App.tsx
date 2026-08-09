@@ -3,6 +3,7 @@ import TopNav from './components/TopNav'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import HistoryPage from './pages/HistoryPage'
+import ChatPage from './pages/ChatPage'
 
 function App() {
   return (
@@ -17,7 +18,7 @@ function App() {
                 <Route path="/" element={<div>온보딩</div>} />
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/history" element={<HistoryPage />} />
-                <Route path="/chat" element={<div>챗봇</div>} />
+                <Route path="/chat" element={<ChatPage />} />
                 <Route path="/family" element={<div>가족</div>} />
                 <Route path="/mypage" element={<div>마이페이지</div>} />
               </Routes>
