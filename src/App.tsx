@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import TopNav from './components/TopNav'
 import LoginPage from './pages/LoginPage'
+import HomePage from './pages/HomePage'
 
 function App() {
   return (
@@ -10,10 +11,10 @@ function App() {
         <Route path="/*" element={
           <>
             <TopNav />
-            <div className="pt-16">
+            <div className="pt-14 max-w-3xl mx-auto px-6">
               <Routes>
                 <Route path="/" element={<div>온보딩</div>} />
-                <Route path="/home" element={<div>홈</div>} />
+                <Route path="/home" element={<HomePage />} />
                 <Route path="/history" element={<div>이력</div>} />
                 <Route path="/chat" element={<div>챗봇</div>} />
                 <Route path="/family" element={<div>가족</div>} />
