@@ -46,16 +46,31 @@ const TREND_ITEMS: TrendItem[] = [
   { id: '3', title: '정부지원금 안내 사칭', description: '지원금 신청을 빙자한 피싱 사이트 유도' },
 ]
 
+const EVIDENCES: Record<RiskLevel, Evidence[]> = {
+  high: [
+    { id: 'e1', title: '의심 도메인', description: '공식 도메인과 유사한 위장 주소를 사용하고 있습니다.' },
+    { id: 'e2', title: '긴급성 유도 문구', description: '"즉시", "지금 바로" 등 조급함을 유발하는 표현이 포함되어 있습니다.' },
+    { id: 'e3', title: '개인정보 입력 요구', description: '비밀번호·계좌번호 등 민감 정보를 요구합니다.' },
+  ],
+  med: [
+    { id: 'e1', title: '의심 링크', description: '본문 내 URL이 공식 사이트와 다릅니다.' },
+  ],
+  low: [],
+}
+
 function detectInputType(value: string): InputType {
   return /^https?:\/\//i.test(value.trim()) ? 'url' : 'email'
 }
 
-async function analyzeInput(_value: string, _type: InputType): Promise<AnalysisResult> {
+async function analyzeInput(value: string, type: InputType): Promise<AnalysisResult> {
+  // TODO: API 연동 시 실제 요청으로 교체 — POST /api/v1/analyses
+  console.log(value, type)
+
   await new Promise((resolve) => setTimeout(resolve, 600))
-  
+
   const levels: RiskLevel[] = ['high', 'med', 'low']
   const riskLevel = levels[Math.floor(Math.random() * levels.length)]
-  
+
   const summaries: Record<RiskLevel, string> = {
     high: '피싱 의심 사이트 및 개인정보 탈취 시도가 감지되었습니다.',
     med: '일부 의심 요소가 발견되었습니다. 주의가 필요합니다.',
@@ -65,11 +80,7 @@ async function analyzeInput(_value: string, _type: InputType): Promise<AnalysisR
   return {
     riskLevel,
     summary: summaries[riskLevel],
-    evidences: [
-      { id: 'e1', title: '의심 도메인', description: '공식 도메인과 유사한 위장 주소를 사용하고 있습니다.' },
-      { id: 'e2', title: '긴급성 유도 문구', description: '"즉시", "지금 바로" 등 조급함을 유발하는 표현이 포함되어 있습니다.' },
-      { id: 'e3', title: '개인정보 입력 요구', description: '비밀번호·계좌번호 등 민감 정보를 요구합니다.' },
-    ],
+    evidences: EVIDENCES[riskLevel],
   }
 }
 
@@ -101,7 +112,7 @@ export default function HomePage() {
 
       <section className="bg-surface rounded-2xl border border-line p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-t1">분석할 내용 입력</span>
+          <label htmlFor="analysis-input" className="text-sm font-semibold text-t1">분석할 내용 입력</label>
           {input && (
             <span className="text-xs px-2 py-1 rounded-full bg-tint-line text-blue font-semibold">
               {inputType === 'url' ? 'URL 감지됨' : '텍스트 감지됨'}
@@ -109,12 +120,17 @@ export default function HomePage() {
           )}
         </div>
         <textarea
+          id="analysis-input"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value)
+            setResult(null)
+        }}
           placeholder="이메일 본문 전체 또는 http(s):// 로 시작하는 URL을 붙여넣으세요"
           rows={6}
           className="w-full px-4 py-3 rounded-xl border border-line text-t1 placeholder-t3 resize-none focus:outline-none focus:border-blue bg-white"
         />
+        {/* TODO: API 연동 시 실제 마스킹 처리 — 현재 목업 */}
         <p className="text-xs text-t2 flex items-center gap-1">
           🔒 붙여넣은 내용은 이름·번호가 가려진 뒤 안전하게 분석돼요
         </p>
@@ -127,6 +143,7 @@ export default function HomePage() {
         </button>
       </section>
 
+      {/* TODO: 접근성 개선 — aria-live 추후 추가 */}
       <section className="flex flex-col gap-3">
         <span className="text-sm font-semibold text-t1">분석 결과</span>
         {!result && !loading && (
@@ -147,14 +164,16 @@ export default function HomePage() {
               </span>
               <span className="text-sm font-semibold">{result.summary}</span>
             </div>
-            <div className="flex flex-col gap-2">
-              {result.evidences.map((evidence) => (
-                <div key={evidence.id} className="bg-white/70 rounded-xl border border-line p-3">
-                  <p className="text-sm font-semibold text-t1">{evidence.title}</p>
-                  <p className="text-xs text-t2 mt-1">{evidence.description}</p>
-                </div>
-              ))}
-            </div>
+            {result.evidences.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {result.evidences.map((evidence) => (
+                  <div key={evidence.id} className="bg-white/70 rounded-xl border border-line p-3">
+                    <p className="text-sm font-semibold text-t1">{evidence.title}</p>
+                    <p className="text-xs text-t2 mt-1">{evidence.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </section>
