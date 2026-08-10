@@ -21,9 +21,9 @@ function App() {
               <div className="pt-14 max-w-3xl mx-auto px-6">
                 <Routes>
                   <Route path="/" element={<div>온보딩</div>} />
-                  <Route path="/home" element={<HomePage />} />
+                  <Route path="/home" element={<PrivateRoute><HomePage /></PrivateRoute>} />
                   <Route path="/history" element={<PrivateRoute><HistoryPage /></PrivateRoute>} />
-                  <Route path="/chat" element={<ChatPage />} />
+                  <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
                   <Route path="/family" element={<PrivateRoute><FamilyPage /></PrivateRoute>} />
                   <Route path="/mypage" element={<PrivateRoute><MyPage /></PrivateRoute>} />
                 </Routes>
