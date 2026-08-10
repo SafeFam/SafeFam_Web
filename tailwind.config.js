@@ -24,8 +24,29 @@ export default {
         track: '#EEF0F4',
         'toggle-off': '#D3D9E2',
       },
+      // 앱(SafeFam_FE `AppText`)과 같은 타이포 스케일.
+      // 전 연령 대응이라 본문 16·버튼 17 아래로 내리지 않는다.
+      // 굵기는 400/600/700만 쓴다.
+      fontSize: {
+        logo: ['32px', { lineHeight: '1.2', fontWeight: '700' }],
+        'title-lg': ['24px', { lineHeight: '1.3', fontWeight: '700' }],
+        'title-result': ['22px', { lineHeight: '1.35', fontWeight: '700' }],
+        'title-screen': ['19px', { lineHeight: '1.4', fontWeight: '700' }],
+        button: ['17px', { lineHeight: '1.4', fontWeight: '700' }],
+        body: ['16px', { lineHeight: '1.6', fontWeight: '400' }],
+        'body-strong': ['16px', { lineHeight: '1.6', fontWeight: '600' }],
+        caption: ['14px', { lineHeight: '1.5', fontWeight: '400' }],
+        section: ['13px', { lineHeight: '1.4', fontWeight: '600' }],
+      },
+      borderRadius: {
+        // 앱 컴포넌트 기준: 버튼 14 · 카드 16 · 칩 22 · 뱃지 11
+        button: '14px',
+        card: '16px',
+        chip: '22px',
+        badge: '11px',
+      },
       fontFamily: {
-        pretendard: ['Pretendard', 'sans-serif'],
+        pretendard: ['Pretendard', 'system-ui', 'sans-serif'],
       },
     },
   },
