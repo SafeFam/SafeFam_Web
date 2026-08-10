@@ -1,45 +1,37 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { IoTrashOutline } from 'react-icons/io5'
+import {
+  getAnalysis,
+  getAnalysisList,
+  postFeedback,
+  deleteAnalysis,
+} from '../api/analyses'
+import type { AnalysisDetail, AnalysisListItem, RiskLevel } from '../api/analyses'
 
-type RiskLevel = 'high' | 'med' | 'low'
-type InputType = 'url' | 'email'
+type UiRiskLevel = 'high' | 'med' | 'low'
 type PeriodFilter = '7' | '30' | '90' | 'all'
-type RiskFilter = 'all' | RiskLevel
-type FeedbackType = 'correct' | 'safe' | 'dangerous'
+type RiskFilter = 'all' | UiRiskLevel
+type FeedbackType = 'CORRECT' | 'SAFE' | 'DANGEROUS'
 
-interface Evidence {
-  id: string
-  title: string
-  description: string
+const PAGE_SIZE = 20
+
+const RISK_META: Record<UiRiskLevel, { label: string; badge: string; box: string }> = {
+  high: { label: '위험', badge: 'bg-high text-white', box: 'bg-high-bg border-high-line text-high-text' },
+  med: { label: '주의', badge: 'bg-med text-white', box: 'bg-med/10 border-med/30 text-med-text' },
+  low: { label: '안전', badge: 'bg-low text-white', box: 'bg-low/10 border-low/30 text-t1' },
 }
 
-interface HistoryItem {
-  id: string
-  date: string
-  inputType: InputType
-  riskLevel: RiskLevel
-  resultSummary: string
-  evidences: Evidence[]
-  response: string[]
+const INDICATOR_TYPE_LABEL: Record<string, string> = {
+  AI_EVIDENCE: 'AI 분석 근거',
+  MALICIOUS_URL: '악성 URL',
+  SHORTENED_URL: '단축 URL',
+  IMPERSONATION: '기관 사칭',
+  ANALYSIS_TRACK_FAILURE: '분석 트랙 실패',
 }
 
-const RISK_META: Record<RiskLevel, { label: string; badge: string; box: string }> = {
-  high: {
-    label: '위험',
-    badge: 'bg-high text-white',
-    box: 'bg-high-bg border-high-line text-high-text',
-  },
-  med: {
-    label: '주의',
-    badge: 'bg-med text-white',
-    box: 'bg-med/10 border-med/30 text-med-text',
-  },
-  low: {
-    label: '안전',
-    badge: 'bg-low text-white',
-    box: 'bg-low/10 border-low/30 text-t1',
-  },
-}
+const RISK_LEVEL_MAP: Record<RiskLevel, UiRiskLevel> = { HIGH: 'high', MEDIUM: 'med', LOW: 'low' }
+const RISK_LEVEL_TO_API: Record<UiRiskLevel, RiskLevel> = { high: 'HIGH', med: 'MEDIUM', low: 'LOW' }
 
 const PERIOD_OPTIONS: { value: PeriodFilter; label: string }[] = [
   { value: '7', label: '7일' },
@@ -55,71 +47,150 @@ const RISK_OPTIONS: { value: RiskFilter; label: string }[] = [
   { value: 'low', label: '안전' },
 ]
 
-// TODO: API 연동 시 실제 이력 목록 요청으로 교체 — GET /api/v1/analyses
-const HISTORY_ITEMS: HistoryItem[] = [
-  {
-    id: '1',
-    date: '2026-08-08',
-    inputType: 'url',
-    riskLevel: 'high',
-    resultSummary: '피싱 의심 사이트 및 개인정보 탈취 시도가 감지되었습니다.',
-    evidences: [
-      { id: 'e1', title: '의심 도메인', description: '공식 도메인과 유사한 위장 주소를 사용하고 있습니다.' },
-      { id: 'e2', title: '긴급성 유도 문구', description: '"즉시", "지금 바로" 등 조급함을 유발하는 표현이 포함되어 있습니다.' },
-    ],
-    response: ['발신자와 안내 내용을 공식 앱에서 한 번 더 확인하세요.', '링크를 클릭하지 마세요.'],
-  },
-  {
-    id: '2',
-    date: '2026-08-05',
-    inputType: 'email',
-    riskLevel: 'med',
-    resultSummary: '일부 의심 요소가 발견되었습니다. 주의가 필요합니다.',
-    evidences: [
-      { id: 'e1', title: '의심 링크', description: '본문 내 URL이 공식 사이트와 다릅니다.' },
-    ],
-    response: ['공식 홈페이지에서 직접 확인하세요.'],
-  },
-  {
-    id: '3',
-    date: '2026-07-30',
-    inputType: 'email',
-    riskLevel: 'low',
-    resultSummary: '위험 요소가 발견되지 않았습니다.',
-    evidences: [],
-    response: [],
-  },
+const FEEDBACK_OPTIONS: { type: FeedbackType; label: string }[] = [
+  { type: 'CORRECT', label: '정확해요' },
+  { type: 'SAFE', label: '실제로는 안전했어요' },
+  { type: 'DANGEROUS', label: '실제로는 위험했어요' },
 ]
 
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '날짜 없음'
+  const [year, month, day] = dateStr.split('T')[0].split('-')
+  return `${year}.${month}.${day}`
+}
+
+function buildDateRange(period: PeriodFilter): { from?: string; to?: string } {
+  if (period === 'all') return {}
+  const days = Number(period)
+  const to = new Date()
+  const from = new Date()
+  from.setDate(from.getDate() - days)
+  return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) }
 }
 
 export default function HistoryPage() {
   const navigate = useNavigate()
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all')
   const [riskFilter, setRiskFilter] = useState<RiskFilter>('all')
-  const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null)
-  const [feedback, setFeedback] = useState<FeedbackType | null>(null)
 
-  const filteredItems = useMemo(() => {
-    const now = new Date()
-    return HISTORY_ITEMS.filter((item) => {
-      if (riskFilter !== 'all' && item.riskLevel !== riskFilter) return false
-      if (periodFilter !== 'all') {
-        const days = Number(periodFilter)
-        const diffMs = now.getTime() - new Date(item.date).getTime()
-        const diffDays = diffMs / (1000 * 60 * 60 * 24)
-        if (diffDays > days) return false
-      }
-      return true
+  const [items, setItems] = useState<AnalysisListItem[]>([])
+  const [page, setPage] = useState(0)
+  const [last, setLast] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedDetail, setSelectedDetail] = useState<AnalysisDetail | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detailError, setDetailError] = useState<string | null>(null)
+
+  const [feedback, setFeedback] = useState<FeedbackType | null>(null)
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
+
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    setError(null)
+    const { from, to } = buildDateRange(periodFilter)
+    getAnalysisList({
+      page: 0,
+      size: PAGE_SIZE,
+      riskLevel: riskFilter !== 'all' ? RISK_LEVEL_TO_API[riskFilter] : undefined,
+      from,
+      to,
     })
+      .then((res) => {
+        if (!active) return
+        setItems(res.content)
+        setLast(res.last)
+        setPage(0)
+      })
+      .catch(() => { if (active) setError('이력을 불러오지 못했습니다.') })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
   }, [periodFilter, riskFilter])
 
-  const handleFeedback = (type: FeedbackType) => {
-    setFeedback(type)
-    // TODO: API 연동 — POST /api/v1/analyses/{analysisId}/feedback
+  const handleLoadMore = async () => {
+    if (loadingMore || last) return
+    setLoadingMore(true)
+    try {
+      const nextPage = page + 1
+      const { from, to } = buildDateRange(periodFilter)
+      const res = await getAnalysisList({
+        page: nextPage,
+        size: PAGE_SIZE,
+        riskLevel: riskFilter !== 'all' ? RISK_LEVEL_TO_API[riskFilter] : undefined,
+        from,
+        to,
+      })
+      setItems((prev) => [...prev, ...res.content])
+      setLast(res.last)
+      setPage(nextPage)
+    } catch {
+      setError('추가 이력을 불러오지 못했습니다.')
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  const handleSelectItem = async (analysisId: number) => {
+    setModalOpen(true)
+    setSelectedDetail(null)
+    setDetailError(null)
+    setFeedback(null)
+    setDetailLoading(true)
+    try {
+      const detail = await getAnalysis(analysisId)
+      setSelectedDetail(detail)
+    } catch {
+      setDetailError('상세 정보를 불러오지 못했습니다.')
+    } finally {
+      setDetailLoading(false)
+    }
+  }
+
+  const handleDeleteClick = (e: React.MouseEvent, analysisId: number) => {
+    e.stopPropagation()
+    setDeleteTarget(analysisId)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteAnalysis(deleteTarget)
+      setItems((prev) => prev.filter((item) => item.analysisId !== deleteTarget))
+    } catch {
+      setError('삭제에 실패했습니다.')
+    } finally {
+      setDeleteTarget(null)
+    }
+  }
+
+  const closeModal = () => {
+    setModalOpen(false)
+    setSelectedDetail(null)
+    setDetailError(null)
+  }
+
+  const handleFeedback = async (type: FeedbackType) => {
+    if (!selectedDetail || feedback || feedbackSubmitting) return
+    setFeedbackSubmitting(true)
+    try {
+      await postFeedback(selectedDetail.analysisId, type)
+      setFeedback(type)
+    } finally {
+      setFeedbackSubmitting(false)
+    }
+  }
+
+  const handleAskChat = () => {
+    if (!selectedDetail) return
+    const analysisId = selectedDetail.analysisId
+    closeModal()
+    navigate('/chat', { state: { analysisId } })
   }
 
   return (
@@ -136,9 +207,7 @@ export default function HistoryPage() {
               key={option.value}
               onClick={() => setPeriodFilter(option.value)}
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border ${
-                periodFilter === option.value
-                  ? 'bg-blue text-white border-blue'
-                  : 'bg-white text-t2 border-line'
+                periodFilter === option.value ? 'bg-blue text-white border-blue' : 'bg-white text-t2 border-line'
               }`}
             >
               {option.label}
@@ -151,9 +220,7 @@ export default function HistoryPage() {
               key={option.value}
               onClick={() => setRiskFilter(option.value)}
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border ${
-                riskFilter === option.value
-                  ? 'bg-t1 text-white border-t1'
-                  : 'bg-white text-t2 border-line'
+                riskFilter === option.value ? 'bg-t1 text-white border-t1' : 'bg-white text-t2 border-line'
               }`}
             >
               {option.label}
@@ -163,117 +230,159 @@ export default function HistoryPage() {
       </section>
 
       <section className="flex flex-col gap-2">
-        {filteredItems.length === 0 && (
+        {loading && (
+          <div className="bg-surface rounded-2xl border border-line p-6 flex items-center justify-center">
+            <span className="w-5 h-5 border-2 border-blue border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+        {!loading && error && (
+          <div className="bg-high-bg border border-high-line rounded-2xl p-6 text-center text-sm text-high-text">
+            {error}
+          </div>
+        )}
+        {!loading && !error && items.length === 0 && (
           <div className="bg-surface rounded-2xl border border-line p-6 text-center text-sm text-t3">
             조건에 맞는 이력이 없습니다.
           </div>
         )}
-        {filteredItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => { setSelectedItem(item); setFeedback(null) }}
-            className="text-left bg-surface rounded-2xl border border-line p-4 flex flex-col gap-2"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-t3">{formatDate(item.date)}</span>
-                <span className="text-xs text-t3">·</span>
-                <span className="text-xs text-t3">{item.inputType === 'url' ? 'URL' : '텍스트'}</span>
+        {!loading && !error && items.map((item) => {
+          const uiRiskLevel = item.riskLevel ? RISK_LEVEL_MAP[item.riskLevel] : null
+          return (
+            <button
+              key={item.analysisId}
+              onClick={() => handleSelectItem(item.analysisId)}
+              className="text-left bg-surface rounded-2xl border border-line p-4 flex flex-col gap-2"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-t3">{formatDate(item.analyzedAt ?? item.receivedAt)}</span>
+                <div className="flex items-center gap-2">
+                  {uiRiskLevel && (
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full ${RISK_META[uiRiskLevel].badge}`}>
+                      {RISK_META[uiRiskLevel].label}
+                    </span>
+                  )}
+                  <button
+                    onClick={(e) => handleDeleteClick(e, item.analysisId)}
+                    className="text-t3 hover:text-high p-1"
+                    aria-label="삭제"
+                  >
+                    <IoTrashOutline size={14} />
+                  </button>
+                </div>
               </div>
-              <span className={`text-xs font-bold px-3 py-1 rounded-full ${RISK_META[item.riskLevel].badge}`}>
-                {RISK_META[item.riskLevel].label}
-              </span>
-            </div>
-            <p className="text-sm text-t1 line-clamp-2">{item.resultSummary}</p>
+              <p className="text-sm text-t1 line-clamp-2">{item.explanation ?? '분석 결과를 확인해보세요.'}</p>
+            </button>
+          )
+        })}
+        {!loading && !error && !last && items.length > 0 && (
+          <button
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="w-full py-3 rounded-xl border border-line text-sm font-semibold text-t2 disabled:opacity-40"
+          >
+            {loadingMore ? '불러오는 중...' : '더 보기'}
           </button>
-        ))}
+        )}
       </section>
 
-      {selectedItem && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-5"
-          onClick={() => setSelectedItem(null)}
-        >
-          <div
-            className="w-full max-w-sm max-h-[80vh] overflow-y-auto bg-white rounded-2xl p-5 flex flex-col gap-4"
-            onClick={(e) => e.stopPropagation()}
-          >
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-5" onClick={closeModal}>
+          <div className="w-full max-w-sm max-h-[80vh] overflow-y-auto bg-white rounded-2xl p-5 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-t3">{formatDate(selectedItem.date)}</span>
-                <span className="text-xs text-t3">·</span>
-                <span className="text-xs text-t3">{selectedItem.inputType === 'url' ? 'URL' : '텍스트'}</span>
-              </div>
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="text-t3 text-sm font-bold px-2"
-                aria-label="닫기"
-              >
-                ✕
-              </button>
+              <span className="text-sm font-semibold text-t1">분석 상세</span>
+              <button onClick={closeModal} className="text-t3 text-sm font-bold px-2" aria-label="닫기">✕</button>
             </div>
 
-            <div className={`rounded-2xl border p-4 flex flex-col gap-3 ${RISK_META[selectedItem.riskLevel].box}`}>
-              <div className="flex items-center gap-2">
-                <span className={`shrink-0 text-xs font-bold px-3 py-1 rounded-full ${RISK_META[selectedItem.riskLevel].badge}`}>
-                  {RISK_META[selectedItem.riskLevel].label}
-                </span>
-                <span className="text-sm font-semibold">{selectedItem.resultSummary}</span>
-              </div>
-              {selectedItem.evidences.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  {selectedItem.evidences.map((evidence) => (
-                    <div key={evidence.id} className="bg-white/70 rounded-xl border border-line p-3">
-                      <p className="text-sm font-semibold text-t1">{evidence.title}</p>
-                      <p className="text-xs text-t2 mt-1">{evidence.description}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {selectedItem.response.length > 0 && (
-              <div className="bg-high-bg border border-high-line rounded-2xl p-4 flex flex-col gap-2">
-                <p className="text-sm font-bold text-high-text">이렇게 대응하세요</p>
-                {selectedItem.response.map((r, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span className="text-high mt-0.5">✓</span>
-                    <p className="text-sm text-t1">{r}</p>
-                  </div>
-                ))}
+            {detailLoading && (
+              <div className="flex items-center justify-center py-10">
+                <span className="w-6 h-6 border-2 border-blue border-t-transparent rounded-full animate-spin" />
               </div>
             )}
 
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-semibold text-t1">이 분석이 정확했나요?</p>
-              <p className="text-xs text-t2">알려주시면 탐지 정확도를 높이는 데 써요.</p>
-              <div className="flex gap-2 flex-wrap">
-                {([
-                  { type: 'correct' as FeedbackType, label: '정확해요' },
-                  { type: 'safe' as FeedbackType, label: '실제로는 안전했어요' },
-                  { type: 'dangerous' as FeedbackType, label: '실제로는 위험했어요' },
-                ]).map(({ type, label }) => (
-                  <button
-                    key={type}
-                    onClick={() => handleFeedback(type)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
-                      feedback === type
-                        ? 'bg-blue text-white border-blue'
-                        : 'bg-white text-t2 border-line'
-                    }`}
-                  >
-                    {feedback === type ? '✓ ' : ''}{label}
-                  </button>
-                ))}
+            {!detailLoading && detailError && (
+              <div className="bg-high-bg border border-high-line rounded-2xl p-4 text-center text-sm text-high-text">
+                {detailError}
               </div>
-            </div>
+            )}
 
-            <button
-              onClick={() => { setSelectedItem(null); navigate('/chat') }}
-              className="w-full py-3 bg-blue text-white font-bold rounded-xl flex items-center justify-center gap-2"
-            >
-              대응 방법 물어보기
-            </button>
+            {!detailLoading && selectedDetail && (
+              <>
+                <span className="text-xs text-t3">{formatDate(selectedDetail.analyzedAt)}</span>
+
+                {selectedDetail.riskLevel && (
+                  <div className={`rounded-2xl border p-4 flex flex-col gap-3 ${RISK_META[RISK_LEVEL_MAP[selectedDetail.riskLevel]].box}`}>
+                    <div className="flex items-center gap-2">
+                      <span className={`shrink-0 text-xs font-bold px-3 py-1 rounded-full ${RISK_META[RISK_LEVEL_MAP[selectedDetail.riskLevel]].badge}`}>
+                        {RISK_META[RISK_LEVEL_MAP[selectedDetail.riskLevel]].label}
+                      </span>
+                      <span className="text-sm font-semibold">{selectedDetail.explanation}</span>
+                    </div>
+                    {selectedDetail.indicators && selectedDetail.indicators.length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        {selectedDetail.indicators.map((indicator, i) => (
+                          <div key={i} className="bg-white/70 rounded-xl border border-line p-3">
+                            <p className="text-sm font-semibold text-t1">{INDICATOR_TYPE_LABEL[indicator.type] ?? indicator.type}</p>
+                            <p className="text-xs text-t2 mt-1">{indicator.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {selectedDetail.recommendedActions && selectedDetail.recommendedActions.length > 0 && (
+                  <div className="bg-high-bg border border-high-line rounded-2xl p-4 flex flex-col gap-2">
+                    <p className="text-sm font-bold text-high-text">이렇게 대응하세요</p>
+                    {selectedDetail.recommendedActions.map((action, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className="text-high mt-0.5">✓</span>
+                        <p className="text-sm text-t1">{action.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-semibold text-t1">이 분석이 정확했나요?</p>
+                  <p className="text-xs text-t2">알려주시면 탐지 정확도를 높이는 데 써요.</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {FEEDBACK_OPTIONS.map(({ type, label }) => (
+                      <button
+                        key={type}
+                        onClick={() => handleFeedback(type)}
+                        disabled={Boolean(feedback) || feedbackSubmitting}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border disabled:cursor-not-allowed ${
+                          feedback === type ? 'bg-blue text-white border-blue' : 'bg-white text-t2 border-line disabled:opacity-40'
+                        }`}
+                      >
+                        {feedback === type ? '✓ ' : ''}{label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button onClick={handleAskChat} className="w-full py-3 bg-blue text-white font-bold rounded-xl">
+                  대응 방법 물어보기
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {deleteTarget !== null && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-5" onClick={() => setDeleteTarget(null)}>
+          <div className="w-full max-w-xs bg-white rounded-2xl p-5 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+            <p className="text-sm font-semibold text-t1">이 분석 이력을 삭제할까요?</p>
+            <p className="text-xs text-t2">삭제하면 복구할 수 없어요.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2.5 rounded-xl border border-line text-t2 font-semibold text-sm">
+                취소
+              </button>
+              <button onClick={confirmDelete} className="flex-1 py-2.5 rounded-xl bg-high text-white font-semibold text-sm">
+                삭제
+              </button>
+            </div>
           </div>
         </div>
       )}

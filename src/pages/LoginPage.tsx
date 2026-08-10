@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { AxiosError } from 'axios'
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5'
 import logo from '../assets/logo.png'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 interface ApiErrorResponse {
   status: number
