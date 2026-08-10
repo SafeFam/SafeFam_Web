@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IoCall } from 'react-icons/io5'
-import { getAnalysis, postAnalysis, postFeedback } from '../api/analyses'
+import {
+  failedTrackLabels,
+  getAnalysis,
+  hasResult,
+  postAnalysis,
+  postFeedback,
+} from '../api/analyses'
 import type { AnalysisDetail, PhishingCategory, RiskLevel } from '../api/analyses'
 import { getTrends } from '../api/statistics'
 import type { TrendsData } from '../api/statistics'
@@ -10,12 +16,18 @@ type UiRiskLevel = 'high' | 'med' | 'low'
 type InputType = 'url' | 'email'
 type FeedbackType = 'CORRECT' | 'SAFE' | 'DANGEROUS'
 
+// 백엔드 IndicatorType 전체. 빠진 종류가 있으면 `FINANCIAL_ACTION` 같은 영어
+// enum 이름이 그대로 사용자에게 노출된다.
+// ANALYSIS_TRACK_FAILURE는 위험 신호가 아니라 실패 통지라 여기에 두지 않고
+// 부분성공 배너로 따로 안내한다.
 const INDICATOR_TYPE_LABEL: Record<string, string> = {
-  AI_EVIDENCE: 'AI 분석 근거',
-  MALICIOUS_URL: '악성 URL',
-  SHORTENED_URL: '단축 URL',
   IMPERSONATION: '기관 사칭',
-  ANALYSIS_TRACK_FAILURE: '분석 트랙 실패',
+  FINANCIAL_ACTION: '금전 요구',
+  SENSITIVE_INFORMATION: '개인정보 요구',
+  URGENCY: '긴급성 압박',
+  SHORTENED_URL: '단축 URL',
+  MALICIOUS_URL: '악성 URL',
+  AI_EVIDENCE: 'AI 분석 근거',
 }
 
 const RISK_META: Record<UiRiskLevel, { label: string; badge: string; box: string }> = {
@@ -113,7 +125,9 @@ export default function HomePage() {
       try {
         const analysis = await getAnalysis(analysisId)
         if (pollStoppedRef.current) return
-        if (analysis.status === 'COMPLETED') {
+        // 부분성공도 결과가 있는 종료 상태다. 완료와 똑같이 렌더하고,
+        // 어떤 분석이 빠졌는지는 아래 배너로 따로 알린다.
+        if (hasResult(analysis.status)) {
           stopPolling()
           setResult(analysis)
           setLoading(false)
@@ -176,6 +190,25 @@ export default function HomePage() {
 
   const uiRiskLevel = result?.riskLevel ? RISK_LEVEL_MAP[result.riskLevel] : null
   const hasTrends = Boolean(trends && trends.sampleSize > 0 && trends.topPhishingTypes.length > 0)
+
+  // 위험 근거 카드에는 실패 통지를 섞지 않는다. ANALYSIS_TRACK_FAILURE는 위험 신호가
+  // 아니라 '이 분석을 못 돌렸다'는 알림이고, description이 영어 + 내부 엔진명이다.
+  const riskSignals = (result?.indicators ?? []).filter(
+    (indicator) => indicator.type !== 'ANALYSIS_TRACK_FAILURE'
+  )
+  // 빠진 분석 레이어. 전용 필드를 먼저 쓰고, 비어 있으면 지표에서 뽑는다
+  // (서버가 지표 문자열을 파싱해 필드를 만들기 때문에 한쪽만 비는 경우가 있다).
+  const missingLayers = (() => {
+    const fromField = failedTrackLabels(result?.failedTracks ?? null)
+    if (fromField.length > 0) return fromField
+    const fromIndicators = (result?.indicators ?? [])
+      .filter((indicator) => indicator.type === 'ANALYSIS_TRACK_FAILURE')
+      .map((indicator) =>
+        indicator.description.replace(/^Analysis track unavailable:\s*/i, '')
+      )
+    return failedTrackLabels(fromIndicators)
+  })()
+  const isPartial = result?.status === 'PARTIAL_SUCCESS'
 
   return (
     <div className="min-h-screen bg-white px-5 py-6 flex flex-col gap-6">
@@ -241,6 +274,18 @@ export default function HomePage() {
         )}
         {!loading && result && uiRiskLevel && (
           <>
+            {isPartial && (
+              <div className="bg-med/10 border border-med rounded-2xl p-4 flex flex-col gap-1">
+                <p className="text-sm font-bold text-t1">일부 분석을 마치지 못했어요</p>
+                <p className="text-xs text-t2">
+                  {missingLayers.length > 0
+                    ? `${missingLayers.join(' · ')}을(를) 확인하지 못했습니다. `
+                    : '일부 검사를 확인하지 못했습니다. '}
+                  아래 결과는 남은 검사만으로 판단한 것이라, 실제 위험도가 더 높을 수 있어요.
+                  링크·전화에 응답하기 전에 공식 번호로 한 번 더 확인하세요.
+                </p>
+              </div>
+            )}
             <div className={`rounded-2xl border p-4 flex flex-col gap-3 ${RISK_META[uiRiskLevel].box}`}>
               <div className="flex items-center gap-2">
                 <span className={`text-xs font-bold px-3 py-1 rounded-full ${RISK_META[uiRiskLevel].badge}`}>
@@ -248,9 +293,9 @@ export default function HomePage() {
                 </span>
                 <span className="text-sm font-semibold">{result.explanation}</span>
               </div>
-              {result.indicators && result.indicators.length > 0 && (
+              {riskSignals.length > 0 && (
                 <div className="flex flex-col gap-2">
-                  {result.indicators.map((indicator, i) => (
+                  {riskSignals.map((indicator, i) => (
                     <div key={i} className="bg-white/70 rounded-xl border border-line p-3">
                       <p className="text-sm font-semibold text-t1">
                         {INDICATOR_TYPE_LABEL[indicator.type] ?? indicator.type}
