@@ -1,7 +1,64 @@
 import api from './axios'
 
 export type InputType = 'url' | 'email'
-export type AnalysisStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
+
+/**
+ * 분석 처리 상태.
+ *
+ * 종료 상태는 `COMPLETED` · `PARTIAL_SUCCESS` · `FAILED` 셋이며, 이 중
+ * 점수·등급을 신뢰할 수 있는 건 앞의 둘뿐이다. `PARTIAL_SUCCESS`는 외부 AI
+ * 일부가 실패했을 때의 **안전모드 정상 결과**이므로 완료와 같이 렌더한다.
+ */
+export type AnalysisStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'COMPLETED'
+  | 'PARTIAL_SUCCESS'
+  | 'FAILED'
+
+/** 결과(점수·등급)를 신뢰할 수 있는 상태인지. */
+export function hasResult(status: AnalysisStatus): boolean {
+  return status === 'COMPLETED' || status === 'PARTIAL_SUCCESS'
+}
+
+/** 더 이상 폴링할 필요가 없는 상태인지. */
+export function isTerminal(status: AnalysisStatus): boolean {
+  return hasResult(status) || status === 'FAILED'
+}
+
+/**
+ * 실패한 분석 트랙 토큰을 사용자에게 보여줄 한국어 레이어명으로 바꾼다.
+ *
+ * 서버가 주는 값은 `TEXT:GEMINI`·`URL:VIRUSTOTAL`처럼 **영어 + 내부 엔진명**이라
+ * 그대로 노출하면 안 된다. 앞부분(레이어군)만 취해 3중 스코어 레이어로 환원하고,
+ * 모르는 토큰이면 `null`을 돌려 안내에서 생략한다.
+ */
+export function failedTrackLabel(track: string): string | null {
+  switch (track.split(':')[0]?.trim().toUpperCase()) {
+    case 'TEXT':
+      return '문맥 분석'
+    case 'URL':
+      return '링크 보안 분석'
+    case 'RULES':
+      return '글자 패턴 분석'
+    case 'PIPELINE':
+      return '전체 분석'
+    default:
+      return null
+  }
+}
+
+/** 부분성공 안내에 쓸 한국어 레이어명 목록(중복 제거). */
+export function failedTrackLabels(tracks: string[] | null): string[] {
+  if (!tracks) return []
+  const labels = new Set<string>()
+  for (const track of tracks) {
+    const label = failedTrackLabel(track)
+    if (label) labels.add(label)
+  }
+  return [...labels]
+}
+
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH'
 export type PhishingCategory =
   | 'FINANCIAL_INSTITUTION'
