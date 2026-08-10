@@ -1,11 +1,6 @@
 import api from './axios'
 import type { AnalysisStatus, PhishingCategory, RiskLevel } from './analyses'
-
-interface ApiResponse<T> {
-  status: number
-  message: string
-  data: T
-}
+import type { ApiResponse } from './types'
 
 export interface FamilyMember {
   linkId: number

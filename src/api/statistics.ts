@@ -1,11 +1,6 @@
 import api from './axios'
 import type { PhishingCategory } from './analyses'
-
-interface ApiResponse<T> {
-  status: number
-  message: string
-  data: T
-}
+import type { ApiResponse } from './types'
 
 export interface PhishingTypeTrend {
   category: PhishingCategory

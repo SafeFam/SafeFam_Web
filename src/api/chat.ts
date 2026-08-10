@@ -1,10 +1,5 @@
 import api from './axios'
-
-interface ApiResponse<T> {
-  status: number
-  message: string
-  data: T
-}
+import type { ApiResponse } from './types'
 
 export interface ChatMessage {
   role: string
