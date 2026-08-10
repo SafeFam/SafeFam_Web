@@ -12,7 +12,7 @@ export interface FamilyMember {
   wardId: number
   wardNickname: string | null
   wardPhone: string
-  relationship: string
+  relationship: string | null
   status: string
   linkedAt: string
 }

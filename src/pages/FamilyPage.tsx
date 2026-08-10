@@ -230,7 +230,7 @@ export default function FamilyPage() {
 
   const openEditRelation = (member: FamilyMember) => {
     setEditTarget(member)
-    setRelationInput(member.relationship)
+    setRelationInput(member.relationship ?? '')
     setEditError(null)
   }
 
@@ -508,7 +508,7 @@ export default function FamilyPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-sm font-semibold text-t1">{memberDisplayName(deleteTarget)}님을 가족 목록에서 삭제할까요?</p>
-            <p className="text-xs text-t2">삭제하면 탐지 이력도 함께 사라져요.</p>
+            <p className="text-xs text-t2">연결을 해제하면 더 이상 탐지 이력을 확인할 수 없습니다.</p>
             {deleteError && <p className="text-xs text-high-text">{deleteError}</p>}
             <div className="flex gap-2">
               <button
