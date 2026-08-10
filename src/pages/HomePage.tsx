@@ -73,17 +73,20 @@ export default function HomePage() {
   const [result, setResult] = useState<AnalysisDetail | null>(null)
   const [feedback, setFeedback] = useState<FeedbackType | null>(null)
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
+  const [feedbackError, setFeedbackError] = useState<string | null>(null)
   const [trends, setTrends] = useState<TrendsData | null>(null)
   const [trendsLoading, setTrendsLoading] = useState(true)
 
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pollStoppedRef = useRef(false)
 
   const inputType = detectInputType(input)
 
   const stopPolling = () => {
-    if (pollIntervalRef.current !== null) {
-      clearInterval(pollIntervalRef.current)
-      pollIntervalRef.current = null
+    pollStoppedRef.current = true
+    if (pollTimeoutRef.current !== null) {
+      clearTimeout(pollTimeoutRef.current)
+      pollTimeoutRef.current = null
     }
   }
 
@@ -101,11 +104,15 @@ export default function HomePage() {
 
   const startPolling = (analysisId: number) => {
     stopPolling()
+    pollStoppedRef.current = false
     let attempts = 0
-    pollIntervalRef.current = setInterval(async () => {
+
+    const poll = async () => {
+      if (pollStoppedRef.current) return
       attempts += 1
       try {
         const analysis = await getAnalysis(analysisId)
+        if (pollStoppedRef.current) return
         if (analysis.status === 'COMPLETED') {
           stopPolling()
           setResult(analysis)
@@ -118,13 +125,18 @@ export default function HomePage() {
           stopPolling()
           setError('분석이 지연되고 있습니다. 잠시 후 다시 시도해주세요.')
           setLoading(false)
+        } else {
+          pollTimeoutRef.current = setTimeout(poll, POLL_INTERVAL_MS)
         }
       } catch {
+        if (pollStoppedRef.current) return
         stopPolling()
         setError('분석 결과를 불러오는 중 오류가 발생했습니다.')
         setLoading(false)
       }
-    }, POLL_INTERVAL_MS)
+    }
+
+    pollTimeoutRef.current = setTimeout(poll, POLL_INTERVAL_MS)
   }
 
   const handleAnalyze = async () => {
@@ -134,6 +146,7 @@ export default function HomePage() {
     setResult(null)
     setError(null)
     setFeedback(null)
+    setFeedbackError(null)
     try {
       const { analysisId } = await postAnalysis(input, inputType)
       startPolling(analysisId)
@@ -146,9 +159,12 @@ export default function HomePage() {
   const handleFeedback = async (type: FeedbackType) => {
     if (!result || feedback || feedbackSubmitting) return
     setFeedbackSubmitting(true)
+    setFeedbackError(null)
     try {
       await postFeedback(result.analysisId, type)
       setFeedback(type)
+    } catch {
+      setFeedbackError('피드백 전송에 실패했습니다.')
     } finally {
       setFeedbackSubmitting(false)
     }
@@ -218,6 +234,11 @@ export default function HomePage() {
             {error}
           </div>
         )}
+        {!loading && result && !uiRiskLevel && (
+          <div className="bg-surface rounded-2xl border border-line p-6 text-center text-sm text-t3">
+            분석 결과를 표시할 수 없습니다.
+          </div>
+        )}
         {!loading && result && uiRiskLevel && (
           <>
             <div className={`rounded-2xl border p-4 flex flex-col gap-3 ${RISK_META[uiRiskLevel].box}`}>
@@ -271,6 +292,9 @@ export default function HomePage() {
                   </button>
                 ))}
               </div>
+              {feedbackError && (
+                <p className="text-xs text-high-text">{feedbackError}</p>
+              )}
             </div>
 
             <button

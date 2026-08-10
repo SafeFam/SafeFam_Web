@@ -59,13 +59,20 @@ function formatDate(dateStr: string | null | undefined): string {
   return `${year}.${month}.${day}`
 }
 
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function buildDateRange(period: PeriodFilter): { from?: string; to?: string } {
   if (period === 'all') return {}
   const days = Number(period)
   const to = new Date()
   const from = new Date()
   from.setDate(from.getDate() - days)
-  return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) }
+  return { from: toLocalDateString(from), to: toLocalDateString(to) }
 }
 
 export default function HistoryPage() {
@@ -79,6 +86,8 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedDetail, setSelectedDetail] = useState<AnalysisDetail | null>(null)
@@ -87,6 +96,7 @@ export default function HistoryPage() {
 
   const [feedback, setFeedback] = useState<FeedbackType | null>(null)
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
+  const [feedbackError, setFeedbackError] = useState<string | null>(null)
 
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
 
@@ -94,6 +104,7 @@ export default function HistoryPage() {
     let active = true
     setLoading(true)
     setError(null)
+    setLoadMoreError(null)
     const { from, to } = buildDateRange(periodFilter)
     getAnalysisList({
       page: 0,
@@ -116,6 +127,7 @@ export default function HistoryPage() {
   const handleLoadMore = async () => {
     if (loadingMore || last) return
     setLoadingMore(true)
+    setLoadMoreError(null)
     try {
       const nextPage = page + 1
       const { from, to } = buildDateRange(periodFilter)
@@ -130,7 +142,7 @@ export default function HistoryPage() {
       setLast(res.last)
       setPage(nextPage)
     } catch {
-      setError('추가 이력을 불러오지 못했습니다.')
+      setLoadMoreError('추가 이력을 불러오지 못했습니다.')
     } finally {
       setLoadingMore(false)
     }
@@ -141,6 +153,7 @@ export default function HistoryPage() {
     setSelectedDetail(null)
     setDetailError(null)
     setFeedback(null)
+    setFeedbackError(null)
     setDetailLoading(true)
     try {
       const detail = await getAnalysis(analysisId)
@@ -158,12 +171,13 @@ export default function HistoryPage() {
   }
 
   const confirmDelete = async () => {
-    if (!deleteTarget) return
+    if (deleteTarget === null) return
+    setDeleteError(null)
     try {
       await deleteAnalysis(deleteTarget)
       setItems((prev) => prev.filter((item) => item.analysisId !== deleteTarget))
     } catch {
-      setError('삭제에 실패했습니다.')
+      setDeleteError('삭제에 실패했습니다.')
     } finally {
       setDeleteTarget(null)
     }
@@ -178,9 +192,12 @@ export default function HistoryPage() {
   const handleFeedback = async (type: FeedbackType) => {
     if (!selectedDetail || feedback || feedbackSubmitting) return
     setFeedbackSubmitting(true)
+    setFeedbackError(null)
     try {
       await postFeedback(selectedDetail.analysisId, type)
       setFeedback(type)
+    } catch {
+      setFeedbackError('피드백 전송에 실패했습니다.')
     } finally {
       setFeedbackSubmitting(false)
     }
@@ -248,10 +265,18 @@ export default function HistoryPage() {
         {!loading && !error && items.map((item) => {
           const uiRiskLevel = item.riskLevel ? RISK_LEVEL_MAP[item.riskLevel] : null
           return (
-            <button
+            <div
               key={item.analysisId}
+              role="button"
+              tabIndex={0}
               onClick={() => handleSelectItem(item.analysisId)}
-              className="text-left bg-surface rounded-2xl border border-line p-4 flex flex-col gap-2"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleSelectItem(item.analysisId)
+                }
+              }}
+              className="text-left bg-surface rounded-2xl border border-line p-4 flex flex-col gap-2 cursor-pointer"
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs text-t3">{formatDate(item.analyzedAt ?? item.receivedAt)}</span>
@@ -271,9 +296,14 @@ export default function HistoryPage() {
                 </div>
               </div>
               <p className="text-sm text-t1 line-clamp-2">{item.explanation ?? '분석 결과를 확인해보세요.'}</p>
-            </button>
+            </div>
           )
         })}
+        {!loading && !error && deleteError && (
+          <div className="bg-high-bg border border-high-line rounded-2xl p-3 text-center text-sm text-high-text">
+            {deleteError}
+          </div>
+        )}
         {!loading && !error && !last && items.length > 0 && (
           <button
             onClick={handleLoadMore}
@@ -282,6 +312,11 @@ export default function HistoryPage() {
           >
             {loadingMore ? '불러오는 중...' : '더 보기'}
           </button>
+        )}
+        {!loading && !error && loadMoreError && (
+          <div className="bg-high-bg border border-high-line rounded-2xl p-3 text-center text-sm text-high-text">
+            {loadMoreError}
+          </div>
         )}
       </section>
 
@@ -359,6 +394,9 @@ export default function HistoryPage() {
                       </button>
                     ))}
                   </div>
+                  {feedbackError && (
+                    <p className="text-xs text-high-text">{feedbackError}</p>
+                  )}
                 </div>
 
                 <button onClick={handleAskChat} className="w-full py-3 bg-blue text-white font-bold rounded-xl">

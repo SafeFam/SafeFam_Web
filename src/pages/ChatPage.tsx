@@ -36,6 +36,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -53,6 +54,7 @@ export default function ChatPage() {
     const updatedMessages = [...messages, createMessage('USER', trimmed)]
     setMessages(updatedMessages)
     setInput('')
+    setErrorMessage(null)
     setIsTyping(true)
 
     try {
@@ -62,10 +64,7 @@ export default function ChatPage() {
       )
       setMessages((prev) => [...prev, createMessage('ASSISTANT', reply.content)])
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        createMessage('ASSISTANT', '응답을 가져오는 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.'),
-      ])
+      setErrorMessage('응답을 가져오는 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.')
     } finally {
       setIsTyping(false)
     }
@@ -119,6 +118,12 @@ export default function ChatPage() {
         )}
         <div ref={bottomRef} />
       </section>
+
+      {errorMessage && (
+        <section className="bg-high-bg border border-high-line rounded-2xl px-4 py-3 text-sm text-high-text">
+          {errorMessage}
+        </section>
+      )}
 
       <section className="flex items-center gap-2 overflow-x-auto py-2">
         {QUICK_QUESTIONS.map((q) => (
