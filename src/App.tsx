@@ -18,7 +18,8 @@ function App() {
           <Route path="/*" element={
             <>
               <TopNav />
-              <div className="pt-14 max-w-3xl mx-auto px-6">
+              {/* TopNav가 fixed h-16이라 그만큼 본문을 내린다 */}
+              <div className="pt-16 max-w-3xl mx-auto px-6">
                 <Routes>
                   <Route path="/" element={<div>온보딩</div>} />
                   <Route path="/home" element={<PrivateRoute><HomePage /></PrivateRoute>} />
