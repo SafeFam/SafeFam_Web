@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { IoSend } from 'react-icons/io5'
 import logo from '../assets/logo.png'
+import { postChat } from '../api/chat'
 
-type Sender = 'user' | 'ai'
+type Role = 'USER' | 'ASSISTANT'
 
 interface Message {
   id: string
-  sender: Sender
-  text: string
+  role: Role
+  content: string
 }
 
 interface QuickQuestion {
@@ -23,51 +25,49 @@ const QUICK_QUESTIONS: QuickQuestion[] = [
 
 const GREETING = '안녕하세요! SafeFam 챗봇이에요. 피싱이 의심되거나 이미 피해를 입으셨다면 무엇이든 편하게 물어보세요.'
 
-const QUICK_ANSWERS: Record<string, string> = {
-  q1: '피싱 문자를 받으셨군요. 링크는 절대 클릭하지 마시고, 발신 번호를 차단한 뒤 문자 내용은 캡처해서 보관해주세요. 확인이 필요하면 해당 기관 공식 채널로 직접 연락해보세요.',
-  q2: '개인정보가 유출된 것 같다면 즉시 비밀번호를 변경하고, 연결된 계좌·카드사에 도용 여부를 확인해달라고 요청하세요. 필요 시 개인정보침해신고센터(국번없이 118)로 신고할 수 있어요.',
-  q3: '이미 송금하셨다면 최대한 빨리 은행 콜센터 또는 112에 연락해 지급정지를 요청하세요. 시간이 지날수록 되돌리기 어려워지니 지금 바로 연락하는 게 중요해요.',
-}
-
-function createMessage(sender: Sender, text: string): Message {
-  return { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, sender, text }
-}
-
-async function getMockAiResponse(userText: string): Promise<string> {
-  // TODO: API 연동 시 실제 챗봇 응답 요청으로 교체 — POST /api/v1/chat
-  console.log(userText)
-
-  await new Promise((resolve) => setTimeout(resolve, 700))
-
-  return '아직은 목업 응답이에요. 실제 서비스에서는 상황에 맞는 대응 가이드를 안내해드릴 예정이에요. 더 궁금한 점이 있다면 계속 물어보세요!'
+function createMessage(role: Role, content: string): Message {
+  return { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, role, content }
 }
 
 export default function ChatPage() {
+  const location = useLocation()
+  const analysisId = (location.state as { analysisId?: number | null } | null)?.analysisId ?? null
+
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    setMessages([createMessage('ai', GREETING)])
+    setMessages([createMessage('ASSISTANT', GREETING)])
   }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
-  const sendMessage = async (text: string, quickId?: string) => {
+  const sendMessage = async (text: string) => {
     const trimmed = text.trim()
     if (!trimmed || isTyping) return
 
-    setMessages((prev) => [...prev, createMessage('user', trimmed)])
+    const updatedMessages = [...messages, createMessage('USER', trimmed)]
+    setMessages(updatedMessages)
     setInput('')
+    setErrorMessage(null)
     setIsTyping(true)
 
-    const reply = quickId && QUICK_ANSWERS[quickId] ? QUICK_ANSWERS[quickId] : await getMockAiResponse(trimmed)
-
-    setMessages((prev) => [...prev, createMessage('ai', reply)])
-    setIsTyping(false)
+    try {
+      const reply = await postChat(
+        analysisId,
+        updatedMessages.map(({ role, content }) => ({ role, content }))
+      )
+      setMessages((prev) => [...prev, createMessage('ASSISTANT', reply.content)])
+    } catch {
+      setErrorMessage('응답을 가져오는 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setIsTyping(false)
+    }
   }
 
   const handleSend = () => {
@@ -92,24 +92,24 @@ export default function ChatPage() {
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start items-end gap-2'}`}
+            className={`flex ${message.role === 'USER' ? 'justify-end' : 'justify-start items-end gap-2'}`}
           >
-            {message.sender === 'ai' && (
+            {message.role === 'ASSISTANT' && (
               <img src={logo} alt="SafeFam" className="w-8 h-8 rounded-full shrink-0" />
             )}
             <div
               className={`max-w-[80%] px-4 py-3 text-sm whitespace-pre-line ${
-                message.sender === 'user'
+                message.role === 'USER'
                   ? 'bg-blue text-white rounded-2xl rounded-br-sm'
                   : 'bg-surface border border-line text-t1 rounded-2xl rounded-bl-sm'
               }`}
             >
-              {message.text}
+              {message.content}
             </div>
           </div>
         ))}
         {isTyping && (
-          <div className="flex justify-start">
+          <div className="flex justify-start items-end gap-2">
             <img src={logo} alt="SafeFam" className="w-8 h-8 rounded-full shrink-0" />
             <div className="bg-surface border border-line text-t3 rounded-2xl rounded-bl-sm px-4 py-3 text-sm">
               입력 중...
@@ -119,11 +119,17 @@ export default function ChatPage() {
         <div ref={bottomRef} />
       </section>
 
+      {errorMessage && (
+        <section className="bg-high-bg border border-high-line rounded-2xl px-4 py-3 text-sm text-high-text">
+          {errorMessage}
+        </section>
+      )}
+
       <section className="flex items-center gap-2 overflow-x-auto py-2">
         {QUICK_QUESTIONS.map((q) => (
           <button
             key={q.id}
-            onClick={() => void sendMessage(q.label, q.id)}
+            onClick={() => void sendMessage(q.label)}
             disabled={isTyping}
             className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border border-blue text-blue bg-white disabled:opacity-40 disabled:cursor-not-allowed"
           >

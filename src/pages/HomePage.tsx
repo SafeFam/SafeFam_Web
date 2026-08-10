@@ -1,28 +1,24 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { IoCall } from 'react-icons/io5'
+import { getAnalysis, postAnalysis, postFeedback } from '../api/analyses'
+import type { AnalysisDetail, PhishingCategory, RiskLevel } from '../api/analyses'
+import { getTrends } from '../api/statistics'
+import type { TrendsData } from '../api/statistics'
 
-type RiskLevel = 'high' | 'med' | 'low'
+type UiRiskLevel = 'high' | 'med' | 'low'
 type InputType = 'url' | 'email'
+type FeedbackType = 'CORRECT' | 'SAFE' | 'DANGEROUS'
 
-interface Evidence {
-  id: string
-  title: string
-  description: string
+const INDICATOR_TYPE_LABEL: Record<string, string> = {
+  AI_EVIDENCE: 'AI 분석 근거',
+  MALICIOUS_URL: '악성 URL',
+  SHORTENED_URL: '단축 URL',
+  IMPERSONATION: '기관 사칭',
+  ANALYSIS_TRACK_FAILURE: '분석 트랙 실패',
 }
 
-interface AnalysisResult {
-  riskLevel: RiskLevel
-  summary: string
-  evidences: Evidence[]
-}
-
-interface TrendItem {
-  id: string
-  title: string
-  description: string
-}
-
-const RISK_META: Record<RiskLevel, { label: string; badge: string; box: string }> = {
+const RISK_META: Record<UiRiskLevel, { label: string; badge: string; box: string }> = {
   high: {
     label: '위험',
     badge: 'bg-high text-white',
@@ -40,68 +36,146 @@ const RISK_META: Record<RiskLevel, { label: string; badge: string; box: string }
   },
 }
 
-const TREND_ITEMS: TrendItem[] = [
-  { id: '1', title: '택배 미수령 사칭 문자', description: '가짜 배송 조회 링크로 개인정보를 요구하는 스미싱' },
-  { id: '2', title: '가족 사칭 메신저 피싱', description: '자녀·지인을 사칭해 급하게 송금을 요청하는 수법' },
-  { id: '3', title: '정부지원금 안내 사칭', description: '지원금 신청을 빙자한 피싱 사이트 유도' },
+const RISK_LEVEL_MAP: Record<RiskLevel, UiRiskLevel> = {
+  HIGH: 'high',
+  MEDIUM: 'med',
+  LOW: 'low',
+}
+
+const CATEGORY_LABEL: Record<PhishingCategory, string> = {
+  FINANCIAL_INSTITUTION: '금융기관 사칭',
+  GOVERNMENT_AGENCY: '정부기관 사칭',
+  LOAN: '대출 사기',
+  JOB: '일자리 사기',
+  DELIVERY: '택배 사칭',
+  MESSENGER: '메신저 사칭',
+  OTHER: '기타',
+}
+
+const FEEDBACK_OPTIONS: { type: FeedbackType; label: string }[] = [
+  { type: 'CORRECT', label: '정확해요' },
+  { type: 'SAFE', label: '실제로는 안전했어요' },
+  { type: 'DANGEROUS', label: '실제로는 위험했어요' },
 ]
 
-const EVIDENCES: Record<RiskLevel, Evidence[]> = {
-  high: [
-    { id: 'e1', title: '의심 도메인', description: '공식 도메인과 유사한 위장 주소를 사용하고 있습니다.' },
-    { id: 'e2', title: '긴급성 유도 문구', description: '"즉시", "지금 바로" 등 조급함을 유발하는 표현이 포함되어 있습니다.' },
-    { id: 'e3', title: '개인정보 입력 요구', description: '비밀번호·계좌번호 등 민감 정보를 요구합니다.' },
-  ],
-  med: [
-    { id: 'e1', title: '의심 링크', description: '본문 내 URL이 공식 사이트와 다릅니다.' },
-  ],
-  low: [],
-}
+const MAX_POLL_ATTEMPTS = 20
+const POLL_INTERVAL_MS = 1500
 
 function detectInputType(value: string): InputType {
   return /^https?:\/\//i.test(value.trim()) ? 'url' : 'email'
 }
 
-async function analyzeInput(value: string, type: InputType): Promise<AnalysisResult> {
-  // TODO: API 연동 시 실제 요청으로 교체 — POST /api/v1/analyses
-  console.log(value, type)
-
-  await new Promise((resolve) => setTimeout(resolve, 600))
-
-  const levels: RiskLevel[] = ['high', 'med', 'low']
-  const riskLevel = levels[Math.floor(Math.random() * levels.length)]
-
-  const summaries: Record<RiskLevel, string> = {
-    high: '피싱 의심 사이트 및 개인정보 탈취 시도가 감지되었습니다.',
-    med: '일부 의심 요소가 발견되었습니다. 주의가 필요합니다.',
-    low: '위험 요소가 발견되지 않았습니다.',
-  }
-
-  return {
-    riskLevel,
-    summary: summaries[riskLevel],
-    evidences: EVIDENCES[riskLevel],
-  }
-}
-
 export default function HomePage() {
+  const navigate = useNavigate()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<AnalysisResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [result, setResult] = useState<AnalysisDetail | null>(null)
+  const [feedback, setFeedback] = useState<FeedbackType | null>(null)
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
+  const [feedbackError, setFeedbackError] = useState<string | null>(null)
+  const [trends, setTrends] = useState<TrendsData | null>(null)
+  const [trendsLoading, setTrendsLoading] = useState(true)
+
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pollStoppedRef = useRef(false)
 
   const inputType = detectInputType(input)
 
+  const stopPolling = () => {
+    pollStoppedRef.current = true
+    if (pollTimeoutRef.current !== null) {
+      clearTimeout(pollTimeoutRef.current)
+      pollTimeoutRef.current = null
+    }
+  }
+
+  useEffect(() => stopPolling, [])
+
+  useEffect(() => {
+    let active = true
+    setTrendsLoading(true)
+    getTrends()
+      .then((data) => { if (active) setTrends(data) })
+      .catch(() => { if (active) setTrends(null) })
+      .finally(() => { if (active) setTrendsLoading(false) })
+    return () => { active = false }
+  }, [])
+
+  const startPolling = (analysisId: number) => {
+    stopPolling()
+    pollStoppedRef.current = false
+    let attempts = 0
+
+    const poll = async () => {
+      if (pollStoppedRef.current) return
+      attempts += 1
+      try {
+        const analysis = await getAnalysis(analysisId)
+        if (pollStoppedRef.current) return
+        if (analysis.status === 'COMPLETED') {
+          stopPolling()
+          setResult(analysis)
+          setLoading(false)
+        } else if (analysis.status === 'FAILED') {
+          stopPolling()
+          setError(analysis.explanation ?? '분석에 실패했습니다.')
+          setLoading(false)
+        } else if (attempts >= MAX_POLL_ATTEMPTS) {
+          stopPolling()
+          setError('분석이 지연되고 있습니다. 잠시 후 다시 시도해주세요.')
+          setLoading(false)
+        } else {
+          pollTimeoutRef.current = setTimeout(poll, POLL_INTERVAL_MS)
+        }
+      } catch {
+        if (pollStoppedRef.current) return
+        stopPolling()
+        setError('분석 결과를 불러오는 중 오류가 발생했습니다.')
+        setLoading(false)
+      }
+    }
+
+    pollTimeoutRef.current = setTimeout(poll, POLL_INTERVAL_MS)
+  }
+
   const handleAnalyze = async () => {
     if (!input.trim() || loading) return
+    stopPolling()
     setLoading(true)
     setResult(null)
+    setError(null)
+    setFeedback(null)
+    setFeedbackError(null)
     try {
-      const analysis = await analyzeInput(input, inputType)
-      setResult(analysis)
-    } finally {
+      const { analysisId } = await postAnalysis(input, inputType)
+      startPolling(analysisId)
+    } catch {
+      setError('분석 요청 중 오류가 발생했습니다.')
       setLoading(false)
     }
   }
+
+  const handleFeedback = async (type: FeedbackType) => {
+    if (!result || feedback || feedbackSubmitting) return
+    setFeedbackSubmitting(true)
+    setFeedbackError(null)
+    try {
+      await postFeedback(result.analysisId, type)
+      setFeedback(type)
+    } catch {
+      setFeedbackError('피드백 전송에 실패했습니다.')
+    } finally {
+      setFeedbackSubmitting(false)
+    }
+  }
+
+  const handleChat = () => {
+    navigate('/chat', { state: { analysisId: result?.analysisId ?? null } })
+  }
+
+  const uiRiskLevel = result?.riskLevel ? RISK_LEVEL_MAP[result.riskLevel] : null
+  const hasTrends = Boolean(trends && trends.sampleSize > 0 && trends.topPhishingTypes.length > 0)
 
   return (
     <div className="min-h-screen bg-white px-5 py-6 flex flex-col gap-6">
@@ -125,12 +199,12 @@ export default function HomePage() {
           onChange={(e) => {
             setInput(e.target.value)
             setResult(null)
-        }}
+            setError(null)
+          }}
           placeholder="이메일 본문 전체 또는 http(s):// 로 시작하는 URL을 붙여넣으세요"
           rows={6}
           className="w-full px-4 py-3 rounded-xl border border-line text-t1 placeholder-t3 resize-none focus:outline-none focus:border-blue bg-white"
         />
-        {/* TODO: API 연동 시 실제 마스킹 처리 — 현재 목업 */}
         <p className="text-xs text-t2 flex items-center gap-1">
           🔒 붙여넣은 내용은 이름·번호가 가려진 뒤 안전하게 분석돼요
         </p>
@@ -143,10 +217,9 @@ export default function HomePage() {
         </button>
       </section>
 
-      {/* TODO: 접근성 개선 — aria-live 추후 추가 */}
       <section className="flex flex-col gap-3">
         <span className="text-sm font-semibold text-t1">분석 결과</span>
-        {!result && !loading && (
+        {!result && !loading && !error && (
           <div className="bg-surface rounded-2xl border border-line p-6 text-center text-sm text-t3">
             아직 분석 결과가 없습니다.
           </div>
@@ -156,25 +229,81 @@ export default function HomePage() {
             분석하고 있습니다...
           </div>
         )}
-        {result && (
-          <div className={`rounded-2xl border p-4 flex flex-col gap-3 ${RISK_META[result.riskLevel].box}`}>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-bold px-3 py-1 rounded-full ${RISK_META[result.riskLevel].badge}`}>
-                {RISK_META[result.riskLevel].label}
-              </span>
-              <span className="text-sm font-semibold">{result.summary}</span>
+        {!loading && error && (
+          <div className="bg-high-bg border border-high-line rounded-2xl p-6 text-center text-sm text-high-text">
+            {error}
+          </div>
+        )}
+        {!loading && result && !uiRiskLevel && (
+          <div className="bg-surface rounded-2xl border border-line p-6 text-center text-sm text-t3">
+            분석 결과를 표시할 수 없습니다.
+          </div>
+        )}
+        {!loading && result && uiRiskLevel && (
+          <>
+            <div className={`rounded-2xl border p-4 flex flex-col gap-3 ${RISK_META[uiRiskLevel].box}`}>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${RISK_META[uiRiskLevel].badge}`}>
+                  {RISK_META[uiRiskLevel].label}
+                </span>
+                <span className="text-sm font-semibold">{result.explanation}</span>
+              </div>
+              {result.indicators && result.indicators.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  {result.indicators.map((indicator, i) => (
+                    <div key={i} className="bg-white/70 rounded-xl border border-line p-3">
+                      <p className="text-sm font-semibold text-t1">
+                        {INDICATOR_TYPE_LABEL[indicator.type] ?? indicator.type}
+                      </p>
+                      <p className="text-xs text-t2 mt-1">{indicator.description}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            {result.evidences.length > 0 && (
-              <div className="flex flex-col gap-2">
-                {result.evidences.map((evidence) => (
-                  <div key={evidence.id} className="bg-white/70 rounded-xl border border-line p-3">
-                    <p className="text-sm font-semibold text-t1">{evidence.title}</p>
-                    <p className="text-xs text-t2 mt-1">{evidence.description}</p>
+
+            {result.recommendedActions && result.recommendedActions.length > 0 && (
+              <div className="bg-high-bg border border-high-line rounded-2xl p-4 flex flex-col gap-2">
+                <p className="text-sm font-bold text-high-text">이렇게 대응하세요</p>
+                {result.recommendedActions.map((action, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-high mt-0.5">✓</span>
+                    <p className="text-sm text-t1">{action.label}</p>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+
+            <div className="bg-surface rounded-2xl border border-line p-4 flex flex-col gap-2">
+              <p className="text-sm font-semibold text-t1">이 분석이 정확했나요?</p>
+              <div className="flex gap-2 flex-wrap">
+                {FEEDBACK_OPTIONS.map(({ type, label }) => (
+                  <button
+                    key={type}
+                    onClick={() => handleFeedback(type)}
+                    disabled={Boolean(feedback) || feedbackSubmitting}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border disabled:cursor-not-allowed ${
+                      feedback === type
+                        ? 'bg-blue text-white border-blue'
+                        : 'bg-white text-t2 border-line disabled:opacity-40'
+                    }`}
+                  >
+                    {feedback === type ? '✓ ' : ''}{label}
+                  </button>
+                ))}
+              </div>
+              {feedbackError && (
+                <p className="text-xs text-high-text">{feedbackError}</p>
+              )}
+            </div>
+
+            <button
+              onClick={handleChat}
+              className="w-full py-3 bg-blue text-white font-bold rounded-xl"
+            >
+              챗봇과 대응 방법 상담하기
+            </button>
+          </>
         )}
       </section>
 
@@ -193,20 +322,32 @@ export default function HomePage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <span className="text-sm font-semibold text-t1">이번 주 피싱 트렌드 TOP 3</span>
-        <div className="flex flex-col gap-2">
-          {TREND_ITEMS.map((item, index) => (
-            <div key={item.id} className="bg-surface rounded-2xl border border-line p-3 flex items-start gap-3">
-              <span className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full bg-blue text-white text-xs font-bold">
-                {index + 1}
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-t1">{item.title}</p>
-                <p className="text-xs text-t2 mt-1">{item.description}</p>
+        <span className="text-sm font-semibold text-t1">이번 달 피싱 트렌드 TOP 3</span>
+        {trendsLoading && (
+          <div className="bg-surface rounded-2xl border border-line p-6 flex items-center justify-center">
+            <span className="w-5 h-5 border-2 border-blue border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+        {!trendsLoading && !hasTrends && (
+          <div className="bg-surface rounded-2xl border border-line p-6 text-center text-sm text-t3">
+            아직 트렌드 데이터가 없습니다.
+          </div>
+        )}
+        {!trendsLoading && hasTrends && trends && (
+          <div className="flex flex-col gap-2">
+            {trends.topPhishingTypes.slice(0, 3).map((item, index) => (
+              <div key={item.category} className="bg-surface rounded-2xl border border-line p-3 flex items-start gap-3">
+                <span className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full bg-blue text-white text-xs font-bold">
+                  {index + 1}
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-t1">{CATEGORY_LABEL[item.category]}</p>
+                  <p className="text-xs text-t2 mt-1">{Math.round(item.ratio * 100)}% ({item.count}건)</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   )
