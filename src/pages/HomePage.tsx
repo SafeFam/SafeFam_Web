@@ -2,19 +2,24 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IoCall } from 'react-icons/io5'
 import {
+  FEEDBACK_OPTIONS,
   failedTrackLabels,
   getAnalysis,
   hasResult,
   postAnalysis,
   postFeedback,
 } from '../api/analyses'
-import type { AnalysisDetail, PhishingCategory, RiskLevel } from '../api/analyses'
+import type {
+  AnalysisDetail,
+  FeedbackType,
+  PhishingCategory,
+  RiskLevel,
+} from '../api/analyses'
 import { getTrends } from '../api/statistics'
 import type { TrendsData } from '../api/statistics'
 
 type UiRiskLevel = 'high' | 'med' | 'low'
 type InputType = 'url' | 'email'
-type FeedbackType = 'CORRECT' | 'SAFE' | 'DANGEROUS'
 
 // 백엔드 IndicatorType 전체. 빠진 종류가 있으면 `FINANCIAL_ACTION` 같은 영어
 // enum 이름이 그대로 사용자에게 노출된다.
@@ -63,12 +68,6 @@ const CATEGORY_LABEL: Record<PhishingCategory, string> = {
   MESSENGER: '메신저 사칭',
   OTHER: '기타',
 }
-
-const FEEDBACK_OPTIONS: { type: FeedbackType; label: string }[] = [
-  { type: 'CORRECT', label: '정확해요' },
-  { type: 'SAFE', label: '실제로는 안전했어요' },
-  { type: 'DANGEROUS', label: '실제로는 위험했어요' },
-]
 
 const MAX_POLL_ATTEMPTS = 20
 const POLL_INTERVAL_MS = 1500

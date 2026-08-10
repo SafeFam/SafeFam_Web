@@ -60,6 +60,21 @@ export function failedTrackLabels(tracks: string[] | null): string[] {
   return [...labels]
 }
 
+/**
+ * 분석 결과 피드백 유형. 백엔드 `FeedbackType` enum과 값이 일치해야 한다.
+ * - `CORRECT` 판정이 정확함
+ * - `FALSE_POSITIVE` 오탐(위험하다 했는데 실제로는 안전)
+ * - `FALSE_NEGATIVE` 미탐(안전하다 했는데 실제로는 위험)
+ */
+export type FeedbackType = 'CORRECT' | 'FALSE_POSITIVE' | 'FALSE_NEGATIVE'
+
+/** 피드백 버튼 구성. 두 페이지(홈·이력)가 공유한다. */
+export const FEEDBACK_OPTIONS: { type: FeedbackType; label: string }[] = [
+  { type: 'CORRECT', label: '정확해요' },
+  { type: 'FALSE_POSITIVE', label: '실제로는 안전했어요' },
+  { type: 'FALSE_NEGATIVE', label: '실제로는 위험했어요' },
+]
+
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH'
 export type PhishingCategory =
   | 'FINANCIAL_INSTITUTION'
@@ -152,8 +167,12 @@ export async function getAnalysisList(params: AnalysisListParams): Promise<Analy
   return data.data
 }
 
-export async function postFeedback(analysisId: number, feedback: string): Promise<void> {
-  await api.post(`/api/v1/analyses/${analysisId}/feedback`, { feedback })
+export async function postFeedback(
+  analysisId: number,
+  type: FeedbackType,
+  comment?: string
+): Promise<void> {
+  await api.post(`/api/v1/analyses/${analysisId}/feedback`, { type, comment })
 }
 
 export async function deleteAnalysis(analysisId: number): Promise<void> {

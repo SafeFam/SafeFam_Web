@@ -2,17 +2,22 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IoTrashOutline } from 'react-icons/io5'
 import {
+  FEEDBACK_OPTIONS,
   getAnalysis,
   getAnalysisList,
   postFeedback,
   deleteAnalysis,
 } from '../api/analyses'
-import type { AnalysisDetail, AnalysisListItem, RiskLevel } from '../api/analyses'
+import type {
+  AnalysisDetail,
+  AnalysisListItem,
+  FeedbackType,
+  RiskLevel,
+} from '../api/analyses'
 
 type UiRiskLevel = 'high' | 'med' | 'low'
 type PeriodFilter = '7' | '30' | '90' | 'all'
 type RiskFilter = 'all' | UiRiskLevel
-type FeedbackType = 'CORRECT' | 'SAFE' | 'DANGEROUS'
 
 const PAGE_SIZE = 20
 
@@ -45,12 +50,6 @@ const RISK_OPTIONS: { value: RiskFilter; label: string }[] = [
   { value: 'high', label: '위험' },
   { value: 'med', label: '주의' },
   { value: 'low', label: '안전' },
-]
-
-const FEEDBACK_OPTIONS: { type: FeedbackType; label: string }[] = [
-  { type: 'CORRECT', label: '정확해요' },
-  { type: 'SAFE', label: '실제로는 안전했어요' },
-  { type: 'DANGEROUS', label: '실제로는 위험했어요' },
 ]
 
 function formatDate(dateStr: string | null | undefined): string {
