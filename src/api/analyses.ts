@@ -1,4 +1,5 @@
 import api from './axios'
+import type { ApiResponse } from './types'
 
 export type InputType = 'url' | 'email'
 export type AnalysisStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
@@ -11,12 +12,6 @@ export type PhishingCategory =
   | 'DELIVERY'
   | 'MESSENGER'
   | 'OTHER'
-
-interface ApiResponse<T> {
-  status: number
-  message: string
-  data: T
-}
 
 export interface Indicator {
   type: string
