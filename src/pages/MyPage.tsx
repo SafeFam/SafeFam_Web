@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import { getMyProfile, patchMyProfile } from '../api/userApi'
-import type { UserProfile } from '../api/userApi'
-import { deleteWhitelist, getWhitelists, postWhitelist } from '../api/whitelistApi'
-import type { WhitelistItem } from '../api/whitelistApi'
+import { getMyProfile, patchMyProfile } from '../api/user'
+import type { UserProfile } from '../api/user'
+import { deleteWhitelist, getWhitelists, postWhitelist } from '../api/whitelist'
+import type { WhitelistItem } from '../api/whitelist'
 import {
   IoPencilOutline,
   IoCheckmarkOutline,
@@ -87,7 +87,10 @@ export default function MyPage() {
 
   const handleSaveName = async () => {
     const trimmed = nameInput.trim()
-    if (!trimmed) return
+    if (!trimmed) {
+      setNameError('이름을 입력해주세요.')
+      return
+    }
     setNameSubmitting(true)
     setNameError(null)
     try {

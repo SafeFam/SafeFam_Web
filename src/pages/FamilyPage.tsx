@@ -190,6 +190,9 @@ export default function FamilyPage() {
     setSelectedMember(null)
     setHistoryItems([])
     setHistoryError(null)
+    setHistoryLoadMoreError(null)
+    setHistoryPage(0)
+    setHistoryLast(true)
   }
 
   const handleLoadMoreHistory = async () => {
@@ -339,7 +342,7 @@ export default function FamilyPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-t1 truncate">
-                      {name} <span className="text-xs text-t3 font-normal">· {member.relationship}</span>
+                      {name}{member.relationship && <span className="text-xs text-t3 font-normal"> · {member.relationship}</span>}
                     </p>
                     <p className="text-xs text-t2 mt-0.5">{maskPhone(member.wardPhone)}</p>
                   </div>
