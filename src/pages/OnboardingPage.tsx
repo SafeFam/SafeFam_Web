@@ -20,6 +20,7 @@ import Reveal from '../components/Reveal'
 import IntroCarousel from '../components/IntroCarousel'
 import type { IntroSlide } from '../components/IntroCarousel'
 import type { UiRiskLevel } from '../components/ui/risk'
+import { scrollBehavior } from '../lib/motion'
 import { useAuth } from '../hooks/useAuth'
 
 /** 캐릭터를 원에 담는 앱 `CharacterDisc` 규격. */
@@ -131,7 +132,7 @@ export default function OnboardingPage() {
   const introRef = useRef<HTMLDivElement | null>(null)
 
   const scrollToIntro = () => {
-    introRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    introRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
   }
 
   return (

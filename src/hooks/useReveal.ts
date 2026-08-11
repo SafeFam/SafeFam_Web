@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
+import { prefersReducedMotion } from '../lib/motion'
 
 /**
  * 애니메이션을 건너뛰고 처음부터 보여야 하는 상황인지.
  *
- * ★접근성: 사용자가 OS에서 '동작 줄이기'를 켰으면 움직임 없이 즉시 보여준다
- * (전 연령 대상이라 어지럼증을 유발할 수 있는 연출을 강제하지 않는다).
- * IntersectionObserver가 없는 환경에서도 내용이 안 보이는 일은 없어야 한다.
+ * 동작 줄이기를 켰으면 움직임 없이 즉시 보여준다. IntersectionObserver가
+ * 없는 환경에서도 내용이 안 보이는 일은 없어야 하므로 같이 걸러낸다.
  */
 function shouldSkipAnimation(): boolean {
   if (typeof window === 'undefined') return true
   if (typeof IntersectionObserver === 'undefined') return true
-  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+  return prefersReducedMotion()
 }
 
 /**
