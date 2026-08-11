@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5'
+import { scrollBehavior } from '../lib/motion'
 
 export interface IntroSlide {
   key: string
@@ -34,7 +35,7 @@ export default function IntroCarousel({ slides }: IntroCarouselProps) {
     const clamped = Math.max(0, Math.min(next, track.children.length - 1))
     const target = track.children[clamped] as HTMLElement | undefined
     if (!target) return
-    track.scrollTo({ left: target.offsetLeft - track.offsetLeft, behavior: 'smooth' })
+    track.scrollTo({ left: target.offsetLeft - track.offsetLeft, behavior: scrollBehavior() })
   }, [])
 
   // 스크롤 위치에서 현재 슬라이드를 역산한다(제스처로 넘겨도 점이 따라오게).
@@ -69,7 +70,7 @@ export default function IntroCarousel({ slides }: IntroCarouselProps) {
         role="group"
         aria-roledescription="캐러셀"
         aria-label="서비스 소개"
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 motion-reduce:scroll-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {slides.map((slide, i) => (
           <section
