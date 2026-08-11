@@ -5,7 +5,14 @@ import type { ApiResponse } from './types'
 export interface FamilyMember {
   linkId: number
   wardId: number
-  wardNickname: string | null
+  /**
+   * 피보호자가 가입 때 등록한 이름(서버 `User.name`).
+   *
+   * ★SafeFam_BE #97에서 `wardNickname`을 대체한 필드다. 예전 이름은 V1 레거시
+   * 컬럼인 `User.nickname`을 읽어 **항상 null**이었고(어떤 가입 경로도 안 채웠다),
+   * 그래서 가족 목록이 늘 마스킹된 전화번호로만 보였다. 이제 실제 이름이 온다.
+   */
+  wardName: string | null
   wardPhone: string
   relationship: string | null
   status: string
