@@ -58,7 +58,7 @@ function maskPhone(phone: string): string {
 }
 
 function memberDisplayName(member: FamilyMember): string {
-  return member.wardNickname ?? maskPhone(member.wardPhone)
+  return member.wardName ?? maskPhone(member.wardPhone)
 }
 
 function hashCode(str: string): number {
