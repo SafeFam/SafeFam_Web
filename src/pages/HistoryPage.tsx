@@ -212,8 +212,8 @@ export default function HistoryPage() {
   return (
     <div className="min-h-screen bg-white px-5 py-6 flex flex-col gap-6">
       <header>
-        <h1 className="text-xl font-bold text-t1">탐지 이력</h1>
-        <p className="text-sm text-t2 mt-1">지금까지 분석한 내역을 확인해보세요.</p>
+        <h1 className="text-title-screen text-t1">탐지 이력</h1>
+        <p className="text-body text-t2 mt-1">지금까지 분석한 내역을 확인해보세요.</p>
       </header>
 
       <section className="flex flex-col gap-3">
@@ -222,7 +222,7 @@ export default function HistoryPage() {
             <button
               key={option.value}
               onClick={() => setPeriodFilter(option.value)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border ${
+              className={`shrink-0 px-3 py-1.5 rounded-full text-section border ${
                 periodFilter === option.value ? 'bg-blue text-white border-blue' : 'bg-white text-t2 border-line'
               }`}
             >
@@ -235,7 +235,7 @@ export default function HistoryPage() {
             <button
               key={option.value}
               onClick={() => setRiskFilter(option.value)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border ${
+              className={`shrink-0 px-3 py-1.5 rounded-full text-section border ${
                 riskFilter === option.value ? 'bg-t1 text-white border-t1' : 'bg-white text-t2 border-line'
               }`}
             >
@@ -252,12 +252,12 @@ export default function HistoryPage() {
           </div>
         )}
         {!loading && error && (
-          <div className="bg-high-bg border border-high-line rounded-2xl p-6 text-center text-sm text-high-text">
+          <div className="bg-high-bg border border-high-line rounded-2xl p-6 text-center text-body text-high-text">
             {error}
           </div>
         )}
         {!loading && !error && items.length === 0 && (
-          <div className="bg-surface rounded-2xl border border-line p-6 text-center text-sm text-t3">
+          <div className="bg-surface rounded-2xl border border-line p-6 text-center text-body text-t3">
             조건에 맞는 이력이 없습니다.
           </div>
         )}
@@ -278,10 +278,10 @@ export default function HistoryPage() {
               className="text-left bg-surface rounded-2xl border border-line p-4 flex flex-col gap-2 cursor-pointer"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs text-t3">{formatDate(item.analyzedAt ?? item.receivedAt)}</span>
+                <span className="text-caption text-t3">{formatDate(item.analyzedAt ?? item.receivedAt)}</span>
                 <div className="flex items-center gap-2">
                   {uiRiskLevel && (
-                    <span className={`text-xs font-bold px-3 py-1 rounded-full ${RISK_META[uiRiskLevel].badge}`}>
+                    <span className={`text-section px-3 py-1 rounded-full ${RISK_META[uiRiskLevel].badge}`}>
                       {RISK_META[uiRiskLevel].label}
                     </span>
                   )}
@@ -294,12 +294,12 @@ export default function HistoryPage() {
                   </button>
                 </div>
               </div>
-              <p className="text-sm text-t1 line-clamp-2">{item.explanation ?? '분석 결과를 확인해보세요.'}</p>
+              <p className="text-body text-t1 line-clamp-2">{item.explanation ?? '분석 결과를 확인해보세요.'}</p>
             </div>
           )
         })}
         {!loading && !error && deleteError && (
-          <div className="bg-high-bg border border-high-line rounded-2xl p-3 text-center text-sm text-high-text">
+          <div className="bg-high-bg border border-high-line rounded-2xl p-3 text-center text-body text-high-text">
             {deleteError}
           </div>
         )}
@@ -307,13 +307,13 @@ export default function HistoryPage() {
           <button
             onClick={handleLoadMore}
             disabled={loadingMore}
-            className="w-full py-3 rounded-xl border border-line text-sm font-semibold text-t2 disabled:opacity-40"
+            className="w-full py-3 rounded-xl border border-line text-button text-t2 disabled:opacity-40"
           >
             {loadingMore ? '불러오는 중...' : '더 보기'}
           </button>
         )}
         {!loading && !error && loadMoreError && (
-          <div className="bg-high-bg border border-high-line rounded-2xl p-3 text-center text-sm text-high-text">
+          <div className="bg-high-bg border border-high-line rounded-2xl p-3 text-center text-body text-high-text">
             {loadMoreError}
           </div>
         )}
@@ -323,8 +323,8 @@ export default function HistoryPage() {
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-5" onClick={closeModal}>
           <div className="w-full max-w-sm max-h-[80vh] overflow-y-auto bg-white rounded-2xl p-5 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-t1">분석 상세</span>
-              <button onClick={closeModal} className="text-t3 text-sm font-bold px-2" aria-label="닫기">✕</button>
+              <span className="text-body-strong text-t1">분석 상세</span>
+              <button onClick={closeModal} className="text-t3 text-body-strong px-2" aria-label="닫기">✕</button>
             </div>
 
             {detailLoading && (
@@ -334,29 +334,29 @@ export default function HistoryPage() {
             )}
 
             {!detailLoading && detailError && (
-              <div className="bg-high-bg border border-high-line rounded-2xl p-4 text-center text-sm text-high-text">
+              <div className="bg-high-bg border border-high-line rounded-2xl p-4 text-center text-body text-high-text">
                 {detailError}
               </div>
             )}
 
             {!detailLoading && selectedDetail && (
               <>
-                <span className="text-xs text-t3">{formatDate(selectedDetail.analyzedAt)}</span>
+                <span className="text-caption text-t3">{formatDate(selectedDetail.analyzedAt)}</span>
 
                 {selectedDetail.riskLevel && (
                   <div className={`rounded-2xl border p-4 flex flex-col gap-3 ${RISK_META[RISK_LEVEL_MAP[selectedDetail.riskLevel]].box}`}>
                     <div className="flex items-center gap-2">
-                      <span className={`shrink-0 text-xs font-bold px-3 py-1 rounded-full ${RISK_META[RISK_LEVEL_MAP[selectedDetail.riskLevel]].badge}`}>
+                      <span className={`shrink-0 text-section px-3 py-1 rounded-full ${RISK_META[RISK_LEVEL_MAP[selectedDetail.riskLevel]].badge}`}>
                         {RISK_META[RISK_LEVEL_MAP[selectedDetail.riskLevel]].label}
                       </span>
-                      <span className="text-sm font-semibold">{selectedDetail.explanation}</span>
+                      <span className="text-body-strong">{selectedDetail.explanation}</span>
                     </div>
                     {selectedDetail.indicators && selectedDetail.indicators.length > 0 && (
                       <div className="flex flex-col gap-2">
                         {selectedDetail.indicators.map((indicator, i) => (
                           <div key={i} className="bg-white/70 rounded-xl border border-line p-3">
-                            <p className="text-sm font-semibold text-t1">{INDICATOR_TYPE_LABEL[indicator.type] ?? indicator.type}</p>
-                            <p className="text-xs text-t2 mt-1">{indicator.description}</p>
+                            <p className="text-body-strong text-t1">{INDICATOR_TYPE_LABEL[indicator.type] ?? indicator.type}</p>
+                            <p className="text-caption text-t2 mt-1">{indicator.description}</p>
                           </div>
                         ))}
                       </div>
@@ -366,26 +366,26 @@ export default function HistoryPage() {
 
                 {selectedDetail.recommendedActions && selectedDetail.recommendedActions.length > 0 && (
                   <div className="bg-high-bg border border-high-line rounded-2xl p-4 flex flex-col gap-2">
-                    <p className="text-sm font-bold text-high-text">이렇게 대응하세요</p>
+                    <p className="text-body-strong text-high-text">이렇게 대응하세요</p>
                     {selectedDetail.recommendedActions.map((action, i) => (
                       <div key={i} className="flex items-start gap-2">
                         <span className="text-high mt-0.5">✓</span>
-                        <p className="text-sm text-t1">{action.label}</p>
+                        <p className="text-body text-t1">{action.label}</p>
                       </div>
                     ))}
                   </div>
                 )}
 
                 <div className="flex flex-col gap-2">
-                  <p className="text-sm font-semibold text-t1">이 분석이 정확했나요?</p>
-                  <p className="text-xs text-t2">알려주시면 탐지 정확도를 높이는 데 써요.</p>
+                  <p className="text-body-strong text-t1">이 분석이 정확했나요?</p>
+                  <p className="text-caption text-t2">알려주시면 탐지 정확도를 높이는 데 써요.</p>
                   <div className="flex gap-2 flex-wrap">
                     {FEEDBACK_OPTIONS.map(({ type, label }) => (
                       <button
                         key={type}
                         onClick={() => handleFeedback(type)}
                         disabled={Boolean(feedback) || feedbackSubmitting}
-                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border disabled:cursor-not-allowed ${
+                        className={`px-3 py-1.5 rounded-full text-section border disabled:cursor-not-allowed ${
                           feedback === type ? 'bg-blue text-white border-blue' : 'bg-white text-t2 border-line disabled:opacity-40'
                         }`}
                       >
@@ -394,11 +394,11 @@ export default function HistoryPage() {
                     ))}
                   </div>
                   {feedbackError && (
-                    <p className="text-xs text-high-text">{feedbackError}</p>
+                    <p className="text-caption text-high-text">{feedbackError}</p>
                   )}
                 </div>
 
-                <button onClick={handleAskChat} className="w-full py-3 bg-blue text-white font-bold rounded-xl">
+                <button onClick={handleAskChat} className="w-full py-3 bg-blue text-white text-button rounded-xl">
                   대응 방법 물어보기
                 </button>
               </>
@@ -410,13 +410,13 @@ export default function HistoryPage() {
       {deleteTarget !== null && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-5" onClick={() => setDeleteTarget(null)}>
           <div className="w-full max-w-xs bg-white rounded-2xl p-5 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
-            <p className="text-sm font-semibold text-t1">이 분석 이력을 삭제할까요?</p>
-            <p className="text-xs text-t2">삭제하면 복구할 수 없어요.</p>
+            <p className="text-body-strong text-t1">이 분석 이력을 삭제할까요?</p>
+            <p className="text-caption text-t2">삭제하면 복구할 수 없어요.</p>
             <div className="flex gap-2">
-              <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2.5 rounded-xl border border-line text-t2 font-semibold text-sm">
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2.5 rounded-xl border border-line text-t2 text-button">
                 취소
               </button>
-              <button onClick={confirmDelete} className="flex-1 py-2.5 rounded-xl bg-high text-white font-semibold text-sm">
+              <button onClick={confirmDelete} className="flex-1 py-2.5 rounded-xl bg-high text-white text-button">
                 삭제
               </button>
             </div>
