@@ -149,8 +149,8 @@ export default function MyPage() {
   return (
     <div className="min-h-screen bg-white px-5 py-6 flex flex-col gap-6">
       <header>
-        <h1 className="text-xl font-bold text-t1">마이페이지</h1>
-        <p className="text-sm text-t2 mt-1">내 정보와 화이트리스트를 관리하세요.</p>
+        <h1 className="text-title-screen text-t1">마이페이지</h1>
+        <p className="text-body text-t2 mt-1">내 정보와 화이트리스트를 관리하세요.</p>
       </header>
 
       <section className="bg-surface rounded-2xl border border-line p-4 flex flex-col gap-4">
@@ -160,13 +160,13 @@ export default function MyPage() {
           </div>
         )}
         {!profileLoading && profileError && (
-          <div className="bg-high-bg border border-high-line rounded-2xl p-4 text-center text-sm text-high-text">
+          <div className="bg-high-bg border border-high-line rounded-2xl p-4 text-center text-body text-high-text">
             {profileError}
           </div>
         )}
         {!profileLoading && !profileError && profile && (
           <div className="flex items-center gap-4">
-            <span className="w-16 h-16 shrink-0 rounded-full bg-char-disc text-blue text-xl font-bold flex items-center justify-center overflow-hidden">
+            <span className="w-16 h-16 shrink-0 rounded-full bg-char-disc text-blue text-title-screen flex items-center justify-center overflow-hidden">
               {profile.name.charAt(0)}
             </span>
 
@@ -178,7 +178,7 @@ export default function MyPage() {
                     onChange={(e) => setNameInput(e.target.value)}
                     autoFocus
                     maxLength={20}
-                    className="min-w-0 flex-1 text-sm font-semibold text-t1 bg-white border border-line rounded-lg px-2 py-1.5 outline-none focus:border-blue"
+                    className="min-w-0 flex-1 text-body-strong text-t1 bg-white border border-line rounded-lg px-2 py-1.5 outline-none focus:border-blue"
                   />
                   <button
                     onClick={handleSaveName}
@@ -194,23 +194,23 @@ export default function MyPage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5">
-                  <p className="text-base font-bold text-t1 truncate">{profile.name}</p>
+                  <p className="text-title-screen text-t1 truncate">{profile.name}</p>
                   <button onClick={handleStartEditName} aria-label="이름 수정" className="shrink-0 text-t3 p-1">
                     <IoPencilOutline size={14} />
                   </button>
                 </div>
               )}
-              {nameError && <p className="text-xs text-high-text mt-1">{nameError}</p>}
-              <p className="text-xs text-t2 mt-1">{profile.phoneNumber}</p>
-              <p className="text-xs text-t3 mt-0.5">가입일 {formatDate(profile.createdAt)}</p>
+              {nameError && <p className="text-caption text-high-text mt-1">{nameError}</p>}
+              <p className="text-caption text-t2 mt-1">{profile.phoneNumber}</p>
+              <p className="text-caption text-t3 mt-0.5">가입일 {formatDate(profile.createdAt)}</p>
             </div>
           </div>
         )}
       </section>
 
       <section className="flex flex-col gap-3">
-        <span className="text-sm font-semibold text-t1">화이트리스트 관리</span>
-        <p className="text-xs text-t2 -mt-1">등록한 발신번호는 위험 탐지에서 제외돼요.</p>
+        <span className="text-body-strong text-t1">화이트리스트 관리</span>
+        <p className="text-caption text-t2 -mt-1">등록한 발신번호는 위험 탐지에서 제외돼요.</p>
 
         <div className="bg-surface rounded-2xl border border-line p-4 flex flex-col gap-3">
           <div className="flex flex-col gap-2">
@@ -218,14 +218,14 @@ export default function MyPage() {
               value={senderInput}
               onChange={(e) => { setSenderInput(e.target.value); setWhitelistFormError(null) }}
               placeholder="발신번호 (예: 010-1234-5678)"
-              className="text-sm text-t1 bg-white border border-line rounded-lg px-3 py-1.5 outline-none focus:border-blue"
+              className="text-body text-t1 bg-white border border-line rounded-lg px-3 py-1.5 outline-none focus:border-blue"
             />
             <div className="flex items-center gap-2">
               <input
                 value={labelInput}
                 onChange={(e) => { setLabelInput(e.target.value); setWhitelistFormError(null) }}
                 placeholder="메모 (예: 지인, 카드사)"
-                className="min-w-0 flex-1 text-sm text-t1 bg-white border border-line rounded-lg px-3 py-1.5 outline-none focus:border-blue"
+                className="min-w-0 flex-1 text-body text-t1 bg-white border border-line rounded-lg px-3 py-1.5 outline-none focus:border-blue"
               />
               <button
                 onClick={handleAddWhitelist}
@@ -237,7 +237,7 @@ export default function MyPage() {
               </button>
             </div>
           </div>
-          {whitelistFormError && <p className="text-xs text-high-text">{whitelistFormError}</p>}
+          {whitelistFormError && <p className="text-caption text-high-text">{whitelistFormError}</p>}
 
           <div className="flex flex-col gap-2">
             {whitelistLoading && (
@@ -246,12 +246,12 @@ export default function MyPage() {
               </div>
             )}
             {!whitelistLoading && whitelistError && (
-              <div className="bg-high-bg border border-high-line rounded-2xl p-4 text-center text-sm text-high-text">
+              <div className="bg-high-bg border border-high-line rounded-2xl p-4 text-center text-body text-high-text">
                 {whitelistError}
               </div>
             )}
             {!whitelistLoading && !whitelistError && whitelist.length === 0 && (
-              <p className="text-center text-sm text-t3 py-4">등록된 화이트리스트가 없습니다.</p>
+              <p className="text-center text-body text-t3 py-4">등록된 화이트리스트가 없습니다.</p>
             )}
             {!whitelistLoading && !whitelistError && whitelist.map((item) => (
               <div key={item.whitelistId} className="bg-white rounded-xl border border-line px-3 py-2.5 flex items-center gap-2">
@@ -259,8 +259,8 @@ export default function MyPage() {
                   <IoCallOutline size={13} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-t1 truncate">{item.sender} <span className="text-t3">· {item.label}</span></p>
-                  <p className="text-xs text-t3">{formatDate(item.createdAt)} 등록</p>
+                  <p className="text-body text-t1 truncate">{item.sender} <span className="text-t3">· {item.label}</span></p>
+                  <p className="text-caption text-t3">{formatDate(item.createdAt)} 등록</p>
                 </div>
                 <button
                   onClick={() => handleDeleteWhitelist(item.whitelistId)}
@@ -277,7 +277,7 @@ export default function MyPage() {
 
       <button
         onClick={() => setIsLogoutConfirmOpen(true)}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-high-line bg-high-bg text-high-text text-sm font-bold"
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-high-line bg-high-bg text-high-text text-button"
       >
         <IoLogOutOutline size={16} />
         로그아웃
@@ -292,15 +292,15 @@ export default function MyPage() {
             className="w-full max-w-xs bg-white rounded-2xl p-5 flex flex-col gap-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-sm font-semibold text-t1">로그아웃 하시겠어요?</p>
-            <p className="text-xs text-t2">다시 로그인해야 서비스를 이용할 수 있어요.</p>
+            <p className="text-body-strong text-t1">로그아웃 하시겠어요?</p>
+            <p className="text-caption text-t2">다시 로그인해야 서비스를 이용할 수 있어요.</p>
             <div className="flex gap-2">
               <button onClick={() => setIsLogoutConfirmOpen(false)}
-                className="flex-1 py-2.5 rounded-xl border border-line text-t2 font-semibold text-sm">
+                className="flex-1 py-2.5 rounded-xl border border-line text-t2 text-button">
                 취소
               </button>
               <button onClick={handleLogout}
-                className="flex-1 py-2.5 rounded-xl bg-high text-white font-semibold text-sm">
+                className="flex-1 py-2.5 rounded-xl bg-high text-white text-button">
                 로그아웃
               </button>
             </div>

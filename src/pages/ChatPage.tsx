@@ -84,8 +84,8 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
       <header className="py-4 border-b border-line">
-        <h1 className="text-xl font-bold text-t1">피싱 대응 챗봇</h1>
-        <p className="text-sm text-t2 mt-1">궁금한 점을 물어보세요.</p>
+        <h1 className="text-title-screen text-t1">피싱 대응 챗봇</h1>
+        <p className="text-body text-t2 mt-1">궁금한 점을 물어보세요.</p>
       </header>
 
       <section className="flex-1 overflow-y-auto py-4 flex flex-col gap-3">
@@ -98,7 +98,7 @@ export default function ChatPage() {
               <img src={logo} alt="SafeFam" className="w-8 h-8 rounded-full shrink-0" />
             )}
             <div
-              className={`max-w-[80%] px-4 py-3 text-sm whitespace-pre-line ${
+              className={`max-w-[80%] px-4 py-3 text-body whitespace-pre-line ${
                 message.role === 'USER'
                   ? 'bg-blue text-white rounded-2xl rounded-br-sm'
                   : 'bg-surface border border-line text-t1 rounded-2xl rounded-bl-sm'
@@ -111,7 +111,7 @@ export default function ChatPage() {
         {isTyping && (
           <div className="flex justify-start items-end gap-2">
             <img src={logo} alt="SafeFam" className="w-8 h-8 rounded-full shrink-0" />
-            <div className="bg-surface border border-line text-t3 rounded-2xl rounded-bl-sm px-4 py-3 text-sm">
+            <div className="bg-surface border border-line text-t3 rounded-2xl rounded-bl-sm px-4 py-3 text-body">
               입력 중...
             </div>
           </div>
@@ -120,7 +120,7 @@ export default function ChatPage() {
       </section>
 
       {errorMessage && (
-        <section className="bg-high-bg border border-high-line rounded-2xl px-4 py-3 text-sm text-high-text">
+        <section className="bg-high-bg border border-high-line rounded-2xl px-4 py-3 text-body text-high-text">
           {errorMessage}
         </section>
       )}
@@ -131,7 +131,7 @@ export default function ChatPage() {
             key={q.id}
             onClick={() => void sendMessage(q.label)}
             disabled={isTyping}
-            className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border border-blue text-blue bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+            className="shrink-0 px-3 py-1.5 rounded-full text-section border border-blue text-blue bg-white disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {q.label}
           </button>
