@@ -212,15 +212,15 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white px-5 py-6 flex flex-col gap-6">
       <header>
-        <h1 className="text-xl font-bold text-t1">피싱 위험 분석</h1>
-        <p className="text-sm text-t2 mt-1">이메일 본문이나 URL을 붙여넣으면 위험도를 분석해드려요.</p>
+        <h1 className="text-title-screen text-t1">피싱 위험 분석</h1>
+        <p className="text-body text-t2 mt-1">이메일 본문이나 URL을 붙여넣으면 위험도를 분석해드려요.</p>
       </header>
 
       <section className="bg-surface rounded-2xl border border-line p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <label htmlFor="analysis-input" className="text-sm font-semibold text-t1">분석할 내용 입력</label>
+          <label htmlFor="analysis-input" className="text-body-strong text-t1">분석할 내용 입력</label>
           {input && (
-            <span className="text-xs px-2 py-1 rounded-full bg-tint-line text-blue font-semibold">
+            <span className="text-section px-2 py-1 rounded-full bg-tint-line text-blue">
               {inputType === 'url' ? 'URL 감지됨' : '텍스트 감지됨'}
             </span>
           )}
@@ -237,37 +237,37 @@ export default function HomePage() {
           rows={6}
           className="w-full px-4 py-3 rounded-xl border border-line text-t1 placeholder-t3 resize-none focus:outline-none focus:border-blue bg-white"
         />
-        <p className="text-xs text-t2 flex items-center gap-1">
+        <p className="text-caption text-t2 flex items-center gap-1">
           🔒 붙여넣은 내용은 이름·번호가 가려진 뒤 안전하게 분석돼요
         </p>
         <button
           onClick={handleAnalyze}
           disabled={!input.trim() || loading}
-          className="w-full py-3 bg-blue text-white font-bold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-blue text-white text-button rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {loading ? '분석 중...' : '분석하기'}
         </button>
       </section>
 
       <section className="flex flex-col gap-3">
-        <span className="text-sm font-semibold text-t1">분석 결과</span>
+        <span className="text-body-strong text-t1">분석 결과</span>
         {!result && !loading && !error && (
-          <div className="bg-surface rounded-2xl border border-line p-6 text-center text-sm text-t3">
+          <div className="bg-surface rounded-2xl border border-line p-6 text-center text-body text-t3">
             아직 분석 결과가 없습니다.
           </div>
         )}
         {loading && (
-          <div className="bg-surface rounded-2xl border border-line p-6 text-center text-sm text-t2">
+          <div className="bg-surface rounded-2xl border border-line p-6 text-center text-body text-t2">
             분석하고 있습니다...
           </div>
         )}
         {!loading && error && (
-          <div className="bg-high-bg border border-high-line rounded-2xl p-6 text-center text-sm text-high-text">
+          <div className="bg-high-bg border border-high-line rounded-2xl p-6 text-center text-body text-high-text">
             {error}
           </div>
         )}
         {!loading && result && !uiRiskLevel && (
-          <div className="bg-surface rounded-2xl border border-line p-6 text-center text-sm text-t3">
+          <div className="bg-surface rounded-2xl border border-line p-6 text-center text-body text-t3">
             분석 결과를 표시할 수 없습니다.
           </div>
         )}
@@ -275,8 +275,9 @@ export default function HomePage() {
           <>
             {isPartial && (
               <div className="bg-med/10 border border-med rounded-2xl p-4 flex flex-col gap-1">
-                <p className="text-sm font-bold text-t1">일부 분석을 마치지 못했어요</p>
-                <p className="text-xs text-t2">
+                <p className="text-body-strong text-t1">일부 분석을 마치지 못했어요</p>
+                {/* 결과 신뢰도가 낮다는 안전 안내라 보조 문구로 줄이지 않고 본문 크기로 둔다. */}
+                <p className="text-body text-t2">
                   {missingLayers.length > 0
                     ? `${missingLayers.join(' · ')}을(를) 확인하지 못했습니다. `
                     : '일부 검사를 확인하지 못했습니다. '}
@@ -287,19 +288,19 @@ export default function HomePage() {
             )}
             <div className={`rounded-2xl border p-4 flex flex-col gap-3 ${RISK_META[uiRiskLevel].box}`}>
               <div className="flex items-center gap-2">
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${RISK_META[uiRiskLevel].badge}`}>
+                <span className={`text-section px-3 py-1 rounded-full ${RISK_META[uiRiskLevel].badge}`}>
                   {RISK_META[uiRiskLevel].label}
                 </span>
-                <span className="text-sm font-semibold">{result.explanation}</span>
+                <span className="text-body-strong">{result.explanation}</span>
               </div>
               {riskSignals.length > 0 && (
                 <div className="flex flex-col gap-2">
                   {riskSignals.map((indicator, i) => (
                     <div key={i} className="bg-white/70 rounded-xl border border-line p-3">
-                      <p className="text-sm font-semibold text-t1">
+                      <p className="text-body-strong text-t1">
                         {INDICATOR_TYPE_LABEL[indicator.type] ?? indicator.type}
                       </p>
-                      <p className="text-xs text-t2 mt-1">{indicator.description}</p>
+                      <p className="text-caption text-t2 mt-1">{indicator.description}</p>
                     </div>
                   ))}
                 </div>
@@ -308,25 +309,25 @@ export default function HomePage() {
 
             {result.recommendedActions && result.recommendedActions.length > 0 && (
               <div className="bg-high-bg border border-high-line rounded-2xl p-4 flex flex-col gap-2">
-                <p className="text-sm font-bold text-high-text">이렇게 대응하세요</p>
+                <p className="text-body-strong text-high-text">이렇게 대응하세요</p>
                 {result.recommendedActions.map((action, i) => (
                   <div key={i} className="flex items-start gap-2">
                     <span className="text-high mt-0.5">✓</span>
-                    <p className="text-sm text-t1">{action.label}</p>
+                    <p className="text-body text-t1">{action.label}</p>
                   </div>
                 ))}
               </div>
             )}
 
             <div className="bg-surface rounded-2xl border border-line p-4 flex flex-col gap-2">
-              <p className="text-sm font-semibold text-t1">이 분석이 정확했나요?</p>
+              <p className="text-body-strong text-t1">이 분석이 정확했나요?</p>
               <div className="flex gap-2 flex-wrap">
                 {FEEDBACK_OPTIONS.map(({ type, label }) => (
                   <button
                     key={type}
                     onClick={() => handleFeedback(type)}
                     disabled={Boolean(feedback) || feedbackSubmitting}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border disabled:cursor-not-allowed ${
+                    className={`px-3 py-1.5 rounded-full text-section border disabled:cursor-not-allowed ${
                       feedback === type
                         ? 'bg-blue text-white border-blue'
                         : 'bg-white text-t2 border-line disabled:opacity-40'
@@ -337,13 +338,13 @@ export default function HomePage() {
                 ))}
               </div>
               {feedbackError && (
-                <p className="text-xs text-high-text">{feedbackError}</p>
+                <p className="text-caption text-high-text">{feedbackError}</p>
               )}
             </div>
 
             <button
               onClick={handleChat}
-              className="w-full py-3 bg-blue text-white font-bold rounded-xl"
+              className="w-full py-3 bg-blue text-white text-button rounded-xl"
             >
               챗봇과 대응 방법 상담하기
             </button>
@@ -352,13 +353,13 @@ export default function HomePage() {
       </section>
 
       <section className="bg-surface rounded-2xl border border-line p-4 flex flex-col gap-2">
-        <span className="text-sm font-semibold text-t1">긴급할 땐 바로 연락하세요</span>
+        <span className="text-body-strong text-t1">긴급할 땐 바로 연락하세요</span>
         <div className="flex gap-2">
-          <a href="tel:1332" className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-blue/10 text-blue font-bold">
+          <a href="tel:1332" className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-blue/10 text-blue text-button">
             <IoCall size={16} className="text-black" />
             금융감독원 1332
           </a>
-          <a href="tel:112" className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-high-bg text-high-text font-bold">
+          <a href="tel:112" className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-high-bg text-high-text text-button">
             <IoCall size={16} className="text-black" />
             경찰 112
           </a>
@@ -366,14 +367,14 @@ export default function HomePage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <span className="text-sm font-semibold text-t1">이번 달 피싱 트렌드 TOP 3</span>
+        <span className="text-body-strong text-t1">이번 달 피싱 트렌드 TOP 3</span>
         {trendsLoading && (
           <div className="bg-surface rounded-2xl border border-line p-6 flex items-center justify-center">
             <span className="w-5 h-5 border-2 border-blue border-t-transparent rounded-full animate-spin" />
           </div>
         )}
         {!trendsLoading && !hasTrends && (
-          <div className="bg-surface rounded-2xl border border-line p-6 text-center text-sm text-t3">
+          <div className="bg-surface rounded-2xl border border-line p-6 text-center text-body text-t3">
             아직 트렌드 데이터가 없습니다.
           </div>
         )}
@@ -381,12 +382,12 @@ export default function HomePage() {
           <div className="flex flex-col gap-2">
             {trends.topPhishingTypes.slice(0, 3).map((item, index) => (
               <div key={item.category} className="bg-surface rounded-2xl border border-line p-3 flex items-start gap-3">
-                <span className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full bg-blue text-white text-xs font-bold">
+                <span className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full bg-blue text-white text-section">
                   {index + 1}
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-t1">{CATEGORY_LABEL[item.category]}</p>
-                  <p className="text-xs text-t2 mt-1">{Math.round(item.ratio * 100)}% ({item.count}건)</p>
+                  <p className="text-body-strong text-t1">{CATEGORY_LABEL[item.category]}</p>
+                  <p className="text-caption text-t2 mt-1">{Math.round(item.ratio * 100)}% ({item.count}건)</p>
                 </div>
               </div>
             ))}
