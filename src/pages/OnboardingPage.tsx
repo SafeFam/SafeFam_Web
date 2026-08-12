@@ -145,10 +145,10 @@ export default function OnboardingPage() {
               <CharacterDisc size={120} />
             </div>
             <p className="mt-6 text-section text-blue">우리 가족 금융 지킴이</p>
-            <h1 className="mt-3 text-logo text-t1 sm:text-[40px] sm:leading-tight">
+            <h1 className="mt-3 text-balance text-logo text-t1 sm:text-[40px] sm:leading-tight">
               이 문자, 사기일까요?
             </h1>
-            <p className="mx-auto mt-4 max-w-xl text-body text-t2">
+            <p className="mx-auto mt-4 max-w-xl text-pretty text-body text-t2">
               스미싱·보이스피싱 문자를 넣으면 세이프팸이 위험도를 알려주고,
               무엇을 해야 하는지까지 안내합니다. 위험하면 가족에게도 함께 알립니다.
             </p>
@@ -178,7 +178,7 @@ export default function OnboardingPage() {
         <div className="mx-auto max-w-3xl px-6 py-16">
           <Reveal>
             <SectionLabel>어떻게 쓰나요</SectionLabel>
-            <h2 className="mt-2 text-title-lg text-t1">넣고, 보고, 대응하기</h2>
+            <h2 className="mt-2 text-balance text-title-lg text-t1">넣고, 보고, 대응하기</h2>
           </Reveal>
           <Reveal delay={100} className="mt-6">
             <IntroCarousel slides={SLIDES} />
@@ -191,8 +191,8 @@ export default function OnboardingPage() {
         <div className="mx-auto max-w-3xl px-6 py-16">
           <Reveal>
             <SectionLabel>분석 방식</SectionLabel>
-            <h2 className="mt-2 text-title-lg text-t1">세 겹으로 나눠 봅니다</h2>
-            <p className="mt-3 text-body text-t2">
+            <h2 className="mt-2 text-balance text-title-lg text-t1">세 겹으로 나눠 봅니다</h2>
+            <p className="mt-3 text-pretty text-body text-t2">
               결과 화면에서는 각 항목이 점수에 얼마나 기여했는지 그대로 보여줍니다.
               왜 위험한지 근거를 확인할 수 있습니다.
             </p>
@@ -209,8 +209,8 @@ export default function OnboardingPage() {
                       </span>
                       <span className="text-title-screen text-blue">{layer.weight}</span>
                     </div>
-                    <h3 className="mt-4 text-body-strong text-t1">{layer.title}</h3>
-                    <p className="mt-2 text-caption text-t2">{layer.body}</p>
+                    <h3 className="mt-4 text-balance text-body-strong text-t1">{layer.title}</h3>
+                    <p className="mt-2 text-pretty text-caption text-t2">{layer.body}</p>
                   </Card>
                 </Reveal>
               </li>
@@ -224,8 +224,8 @@ export default function OnboardingPage() {
         <div className="mx-auto max-w-3xl px-6 py-16">
           <Reveal>
             <SectionLabel>결과 보는 법</SectionLabel>
-            <h2 className="mt-2 text-title-lg text-t1">세 단계로 알려드립니다</h2>
-            <p className="mt-3 text-body text-t2">
+            <h2 className="mt-2 text-balance text-title-lg text-t1">세 단계로 알려드립니다</h2>
+            <p className="mt-3 text-pretty text-body text-t2">
               색만으로 구분하지 않습니다. 색·아이콘·글자를 항상 함께 써서
               색을 구분하기 어려운 분도 바로 알아볼 수 있게 했습니다.
             </p>
@@ -241,7 +241,7 @@ export default function OnboardingPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-body-strong text-t1">{item.title}</p>
-                      <p className="mt-1 text-caption text-t2">{item.body}</p>
+                      <p className="mt-1 text-pretty text-caption text-t2">{item.body}</p>
                     </div>
                   </Card>
                 </Reveal>
@@ -260,8 +260,8 @@ export default function OnboardingPage() {
                 <span className="flex h-11 w-11 items-center justify-center rounded-full bg-bg text-blue">
                   <IoPeopleOutline size={22} aria-hidden />
                 </span>
-                <h3 className="mt-4 text-title-screen text-t1">가족 공동 대응</h3>
-                <p className="mt-2 text-body text-t2">
+                <h3 className="mt-4 text-balance text-title-screen text-t1">가족 공동 대응</h3>
+                <p className="mt-2 text-pretty text-body text-t2">
                   초대 코드나 QR로 가족을 연결하면, 위험한 문자를 받았을 때
                   보호자에게 알림이 갑니다. 바로 전화를 걸거나 안전한지 확인할 수 있습니다.
                 </p>
@@ -272,8 +272,8 @@ export default function OnboardingPage() {
                 <span className="flex h-11 w-11 items-center justify-center rounded-full bg-bg text-blue">
                   <IoCallOutline size={22} aria-hidden />
                 </span>
-                <h3 className="mt-4 text-title-screen text-t1">신고처 바로 연결</h3>
-                <p className="mt-2 text-body text-t2">
+                <h3 className="mt-4 text-balance text-title-screen text-t1">신고처 바로 연결</h3>
+                <p className="mt-2 text-pretty text-body text-t2">
                   금융감독원 1332, 경찰 112, 거래 은행 고객센터로 한 번에 연결됩니다.
                   당황한 상황에서 번호를 찾지 않아도 됩니다.
                 </p>
@@ -290,8 +290,8 @@ export default function OnboardingPage() {
             <div className="flex justify-center">
               <CharacterDisc size={80} />
             </div>
-            <h2 className="mt-6 text-title-lg text-t1">지금 바로 확인해 보세요</h2>
-            <p className="mx-auto mt-3 max-w-md text-body text-t2">
+            <h2 className="mt-6 text-balance text-title-lg text-t1">지금 바로 확인해 보세요</h2>
+            <p className="mx-auto mt-3 max-w-md text-pretty text-body text-t2">
               의심스러운 문자 하나면 충분합니다. 확인은 몇 초, 피해는 되돌리기 어렵습니다.
             </p>
             <div className="mt-8 flex justify-center">

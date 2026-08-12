@@ -83,8 +83,8 @@ export default function IntroCarousel({ slides }: IntroCarouselProps) {
               <div className="shrink-0">{slide.visual}</div>
               <div className="min-w-0">
                 <p className="text-section text-blue">{slide.eyebrow}</p>
-                <h3 className="mt-2 text-title-lg text-t1">{slide.title}</h3>
-                <p className="mt-3 text-body text-t2">{slide.body}</p>
+                <h3 className="mt-2 text-balance text-title-lg text-t1">{slide.title}</h3>
+                <p className="mt-3 text-pretty text-body text-t2">{slide.body}</p>
               </div>
             </div>
           </section>
