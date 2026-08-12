@@ -11,5 +11,12 @@
 
   body {
     @apply bg-white text-t1;
+
+    /* 한글은 브라우저 기본 규칙(UAX #14)상 음절 아무 데서나 끊긴다.
+       그대로 두면 '금융감독원'이 '금융감 / 독원'으로 갈라져 읽기가 끊긴다.
+       keep-all로 띄어쓰기(어절) 단위로만 넘어가게 한다.
+       단 keep-all은 공백 없는 긴 문자열(URL·계좌번호)도 안 끊으므로,
+       그런 경우에만 강제로 끊도록 break-word를 함께 건다. */
+    @apply break-keep break-words;
   }
 }
