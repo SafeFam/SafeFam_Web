@@ -265,27 +265,27 @@ export default function FamilyPage() {
   return (
     <div className="min-h-screen bg-white px-5 py-6 flex flex-col gap-6">
       <header>
-        <h1 className="text-xl font-bold text-t1">가족 관리</h1>
-        <p className="text-sm text-t2 mt-1">가족을 초대하고 탐지 이력을 함께 확인하세요.</p>
+        <h1 className="text-title-screen text-t1">가족 관리</h1>
+        <p className="text-body text-t2 mt-1">가족을 초대하고 탐지 이력을 함께 확인하세요.</p>
       </header>
 
       <section className="bg-surface rounded-2xl border border-line p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-t1">초대 코드</span>
+          <span className="text-body-strong text-t1">초대 코드</span>
           <button
             onClick={handleGenerateInvite}
             disabled={inviteLoading}
-            className="text-xs font-semibold text-blue px-3 py-1.5 rounded-full border border-blue disabled:opacity-40"
+            className="text-section text-blue px-3 py-1.5 rounded-full border border-blue disabled:opacity-40"
           >
             {inviteLoading ? '발급 중...' : invite ? '코드 재발급' : '초대 코드 생성'}
           </button>
         </div>
-        {inviteError && <p className="text-xs text-high-text">{inviteError}</p>}
+        {inviteError && <p className="text-caption text-high-text">{inviteError}</p>}
         {invite && (
           <div className="flex flex-col items-center gap-3">
             <div className="w-full flex items-center justify-between bg-white rounded-xl border border-line px-4 py-3">
-              <span className="text-lg font-bold tracking-[0.3em] text-t1">{invite.inviteCode}</span>
-              <button onClick={handleCopyCode} className="flex items-center gap-1 text-xs font-semibold text-blue">
+              <span className="text-title-screen tracking-[0.3em] text-t1">{invite.inviteCode}</span>
+              <button onClick={handleCopyCode} className="flex items-center gap-1 text-section text-blue">
                 <IoCopyOutline size={14} />
                 {copied ? '복사됨' : '복사'}
               </button>
@@ -293,17 +293,18 @@ export default function FamilyPage() {
             <svg
               viewBox="0 0 9 9"
               shapeRendering="crispEdges"
-              className="w-32 h-32 bg-white rounded-xl border border-line p-2"
+              className="w-32 h-32 bg-white rounded-xl border border-line p-2 text-t1"
               role="img"
               aria-label={`초대 코드 ${invite.inviteCode} QR 코드`}
             >
               {buildQrMatrix(invite.qrToken).map((row, r) =>
                 row.map((filled, c) =>
-                  filled ? <rect key={`${r}-${c}`} x={c} y={r} width={1} height={1} fill="#1B2640" /> : null
+                  // 색은 svg에 건 text-t1을 currentColor로 물려받는다(토큰 하드코딩 금지).
+                  filled ? <rect key={`${r}-${c}`} x={c} y={r} width={1} height={1} fill="currentColor" /> : null
                 )
               )}
             </svg>
-            <p className="text-xs text-t3 text-center">
+            <p className="text-caption text-t3 text-center">
               QR을 스캔하거나 코드를 공유해 가족을 초대하세요 · {formatDate(invite.expiresAt)}까지 유효
             </p>
           </div>
@@ -311,7 +312,7 @@ export default function FamilyPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <span className="text-sm font-semibold text-t1">가족 구성원</span>
+        <span className="text-body-strong text-t1">가족 구성원</span>
         <div className="flex flex-col gap-2">
           {membersLoading && (
             <div className="bg-surface rounded-2xl border border-line p-6 flex items-center justify-center">
@@ -319,12 +320,12 @@ export default function FamilyPage() {
             </div>
           )}
           {!membersLoading && membersError && (
-            <div className="bg-high-bg border border-high-line rounded-2xl p-6 text-center text-sm text-high-text">
+            <div className="bg-high-bg border border-high-line rounded-2xl p-6 text-center text-body text-high-text">
               {membersError}
             </div>
           )}
           {!membersLoading && !membersError && members.length === 0 && (
-            <div className="bg-surface rounded-2xl border border-line p-6 text-center text-sm text-t3">
+            <div className="bg-surface rounded-2xl border border-line p-6 text-center text-body text-t3">
               등록된 가족 구성원이 없습니다.
             </div>
           )}
@@ -337,21 +338,21 @@ export default function FamilyPage() {
                   onClick={() => openMemberHistory(member)}
                   className="flex-1 flex items-center gap-3 text-left min-w-0"
                 >
-                  <span className="w-10 h-10 shrink-0 rounded-full bg-char-disc text-blue font-bold flex items-center justify-center">
+                  <span className="w-10 h-10 shrink-0 rounded-full bg-char-disc text-blue text-body-strong flex items-center justify-center">
                     {name.charAt(0)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-t1 truncate">
-                      {name}{member.relationship && <span className="text-xs text-t3 font-normal"> · {member.relationship}</span>}
+                    <p className="text-body-strong text-t1 truncate">
+                      {name}{member.relationship && <span className="text-caption text-t3"> · {member.relationship}</span>}
                     </p>
-                    <p className="text-xs text-t2 mt-0.5">{maskPhone(member.wardPhone)}</p>
+                    <p className="text-caption text-t2 mt-0.5">{maskPhone(member.wardPhone)}</p>
                   </div>
                   {risk ? (
-                    <span className={`shrink-0 text-xs font-bold px-3 py-1 rounded-full ${RISK_META[risk].badge}`}>
+                    <span className={`shrink-0 text-section px-3 py-1 rounded-full ${RISK_META[risk].badge}`}>
                       {RISK_META[risk].label}
                     </span>
                   ) : (
-                    <span className="shrink-0 text-xs font-semibold px-3 py-1 rounded-full bg-track text-t3">
+                    <span className="shrink-0 text-section px-3 py-1 rounded-full bg-track text-t3">
                       기록 없음
                     </span>
                   )}
@@ -387,10 +388,10 @@ export default function FamilyPage() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-base font-bold text-t1">{memberDisplayName(selectedMember)}</p>
-                <p className="text-xs text-t2 mt-0.5">{maskPhone(selectedMember.wardPhone)} · 탐지 이력</p>
+                <p className="text-title-screen text-t1">{memberDisplayName(selectedMember)}</p>
+                <p className="text-caption text-t2 mt-0.5">{maskPhone(selectedMember.wardPhone)} · 탐지 이력</p>
               </div>
-              <button onClick={closeMemberHistory} className="text-t3 text-sm font-bold px-2" aria-label="닫기">✕</button>
+              <button onClick={closeMemberHistory} className="text-t3 text-body-strong px-2" aria-label="닫기">✕</button>
             </div>
             <div className="flex flex-col gap-2">
               {historyLoading && (
@@ -399,12 +400,12 @@ export default function FamilyPage() {
                 </div>
               )}
               {!historyLoading && historyError && (
-                <div className="bg-high-bg border border-high-line rounded-2xl p-4 text-center text-sm text-high-text">
+                <div className="bg-high-bg border border-high-line rounded-2xl p-4 text-center text-body text-high-text">
                   {historyError}
                 </div>
               )}
               {!historyLoading && !historyError && historyItems.length === 0 && (
-                <div className="bg-surface rounded-2xl border border-line p-6 text-center text-sm text-t3">
+                <div className="bg-surface rounded-2xl border border-line p-6 text-center text-body text-t3">
                   아직 탐지 이력이 없습니다.
                 </div>
               )}
@@ -418,21 +419,21 @@ export default function FamilyPage() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-xs text-t3 shrink-0">{formatDate(item.analyzedAt)}</span>
+                        <span className="text-caption text-t3 shrink-0">{formatDate(item.analyzedAt)}</span>
                         {item.maskedSender && (
                           <>
-                            <span className="text-xs text-t3 shrink-0">·</span>
-                            <span className="text-xs text-t3 truncate">{item.maskedSender}</span>
+                            <span className="text-caption text-t3 shrink-0">·</span>
+                            <span className="text-caption text-t3 truncate">{item.maskedSender}</span>
                           </>
                         )}
                       </div>
                       {uiRisk && (
-                        <span className={`shrink-0 text-xs font-bold px-3 py-1 rounded-full ${RISK_META[uiRisk].badge}`}>
+                        <span className={`shrink-0 text-section px-3 py-1 rounded-full ${RISK_META[uiRisk].badge}`}>
                           {RISK_META[uiRisk].label}
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-t1 line-clamp-2">{item.messagePreview ?? '분석 결과를 확인해보세요.'}</p>
+                    <p className="text-body text-t1 line-clamp-2">{item.messagePreview ?? '분석 결과를 확인해보세요.'}</p>
                   </button>
                 )
               })}
@@ -440,13 +441,13 @@ export default function FamilyPage() {
                 <button
                   onClick={handleLoadMoreHistory}
                   disabled={historyLoadingMore}
-                  className="w-full py-3 rounded-xl border border-line text-sm font-semibold text-t2 disabled:opacity-40"
+                  className="w-full py-3 rounded-xl border border-line text-button text-t2 disabled:opacity-40"
                 >
                   {historyLoadingMore ? '불러오는 중...' : '더 보기'}
                 </button>
               )}
               {historyLoadMoreError && (
-                <div className="bg-high-bg border border-high-line rounded-2xl p-3 text-center text-sm text-high-text">
+                <div className="bg-high-bg border border-high-line rounded-2xl p-3 text-center text-body text-high-text">
                   {historyLoadMoreError}
                 </div>
               )}
@@ -466,34 +467,34 @@ export default function FamilyPage() {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs text-t3 shrink-0">{formatDate(selectedLogItem.analyzedAt)}</span>
+                <span className="text-caption text-t3 shrink-0">{formatDate(selectedLogItem.analyzedAt)}</span>
                 {selectedLogItem.maskedSender && (
                   <>
-                    <span className="text-xs text-t3 shrink-0">·</span>
-                    <span className="text-xs text-t3 truncate">{selectedLogItem.maskedSender}</span>
+                    <span className="text-caption text-t3 shrink-0">·</span>
+                    <span className="text-caption text-t3 truncate">{selectedLogItem.maskedSender}</span>
                   </>
                 )}
               </div>
-              <button onClick={() => setSelectedLogItem(null)} className="text-t3 text-sm font-bold px-2" aria-label="닫기">✕</button>
+              <button onClick={() => setSelectedLogItem(null)} className="text-t3 text-body-strong px-2" aria-label="닫기">✕</button>
             </div>
 
             {selectedLogItem.riskLevel && (
               <div className={`rounded-2xl border p-4 flex flex-col gap-3 ${RISK_META[RISK_LEVEL_MAP[selectedLogItem.riskLevel]].box}`}>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`shrink-0 text-xs font-bold px-3 py-1 rounded-full ${RISK_META[RISK_LEVEL_MAP[selectedLogItem.riskLevel]].badge}`}>
+                  <span className={`shrink-0 text-section px-3 py-1 rounded-full ${RISK_META[RISK_LEVEL_MAP[selectedLogItem.riskLevel]].badge}`}>
                     {RISK_META[RISK_LEVEL_MAP[selectedLogItem.riskLevel]].label}
                   </span>
                   {selectedLogItem.category && (
-                    <span className="text-sm font-semibold">{CATEGORY_LABEL[selectedLogItem.category]}</span>
+                    <span className="text-body-strong">{CATEGORY_LABEL[selectedLogItem.category]}</span>
                   )}
                 </div>
-                <p className="text-sm">{selectedLogItem.messagePreview ?? '메시지 미리보기가 없습니다.'}</p>
+                <p className="text-body">{selectedLogItem.messagePreview ?? '메시지 미리보기가 없습니다.'}</p>
               </div>
             )}
 
             <button
               onClick={() => handleAskChat(selectedLogItem)}
-              className="w-full py-3 bg-blue text-white font-bold rounded-xl"
+              className="w-full py-3 bg-blue text-white text-button rounded-xl"
             >
               대응 방법 물어보기
             </button>
@@ -510,19 +511,19 @@ export default function FamilyPage() {
             className="w-full max-w-xs bg-white rounded-2xl p-5 flex flex-col gap-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-sm font-semibold text-t1">{memberDisplayName(deleteTarget)}님을 가족 목록에서 삭제할까요?</p>
-            <p className="text-xs text-t2">연결을 해제하면 더 이상 탐지 이력을 확인할 수 없습니다.</p>
-            {deleteError && <p className="text-xs text-high-text">{deleteError}</p>}
+            <p className="text-body-strong text-t1">{memberDisplayName(deleteTarget)}님을 가족 목록에서 삭제할까요?</p>
+            <p className="text-caption text-t2">연결을 해제하면 더 이상 탐지 이력을 확인할 수 없습니다.</p>
+            {deleteError && <p className="text-caption text-high-text">{deleteError}</p>}
             <div className="flex gap-2">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-2.5 rounded-xl border border-line text-t2 font-semibold text-sm"
+                className="flex-1 py-2.5 rounded-xl border border-line text-t2 text-button"
               >
                 취소
               </button>
               <button
                 onClick={confirmDeleteMember}
-                className="flex-1 py-2.5 rounded-xl bg-high text-white font-semibold text-sm"
+                className="flex-1 py-2.5 rounded-xl bg-high text-white text-button"
               >
                 삭제
               </button>
@@ -540,26 +541,26 @@ export default function FamilyPage() {
             className="w-full max-w-xs bg-white rounded-2xl p-5 flex flex-col gap-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-sm font-semibold text-t1">{memberDisplayName(editTarget)}님과의 관계</p>
+            <p className="text-body-strong text-t1">{memberDisplayName(editTarget)}님과의 관계</p>
             <input
               value={relationInput}
               onChange={(e) => setRelationInput(e.target.value)}
               maxLength={20}
               autoFocus
-              className="text-sm text-t1 bg-white border border-line rounded-lg px-3 py-2 outline-none focus:border-blue"
+              className="text-body text-t1 bg-white border border-line rounded-lg px-3 py-2 outline-none focus:border-blue"
             />
-            {editError && <p className="text-xs text-high-text">{editError}</p>}
+            {editError && <p className="text-caption text-high-text">{editError}</p>}
             <div className="flex gap-2">
               <button
                 onClick={() => setEditTarget(null)}
-                className="flex-1 py-2.5 rounded-xl border border-line text-t2 font-semibold text-sm"
+                className="flex-1 py-2.5 rounded-xl border border-line text-t2 text-button"
               >
                 취소
               </button>
               <button
                 onClick={handleSaveRelation}
                 disabled={editSubmitting}
-                className="flex-1 py-2.5 rounded-xl bg-blue text-white font-semibold text-sm disabled:opacity-40"
+                className="flex-1 py-2.5 rounded-xl bg-blue text-white text-button disabled:opacity-40"
               >
                 {editSubmitting ? '저장 중...' : '저장'}
               </button>
