@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IoCall } from 'react-icons/io5'
 import {
+  CATEGORY_LABEL,
   FEEDBACK_OPTIONS,
   failedTrackLabels,
   getAnalysis,
@@ -12,7 +13,6 @@ import {
 import type {
   AnalysisDetail,
   FeedbackType,
-  PhishingCategory,
   RiskLevel,
 } from '../api/analyses'
 import { getTrends } from '../api/statistics'
@@ -57,16 +57,6 @@ const RISK_LEVEL_MAP: Record<RiskLevel, UiRiskLevel> = {
   HIGH: 'high',
   MEDIUM: 'med',
   LOW: 'low',
-}
-
-const CATEGORY_LABEL: Record<PhishingCategory, string> = {
-  FINANCIAL_INSTITUTION: '금융기관 사칭',
-  GOVERNMENT_AGENCY: '정부기관 사칭',
-  LOAN: '대출 사기',
-  JOB: '일자리 사기',
-  DELIVERY: '택배 사칭',
-  MESSENGER: '메신저 사칭',
-  OTHER: '기타',
 }
 
 const MAX_POLL_ATTEMPTS = 20
