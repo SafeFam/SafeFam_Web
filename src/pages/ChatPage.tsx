@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { IoSend } from 'react-icons/io5'
 import logo from '../assets/logo.png'
 import { postChat } from '../api/chat'
+import { apiErrorMessage } from '../api/types'
 
 type Role = 'USER' | 'ASSISTANT'
 
@@ -33,15 +34,13 @@ export default function ChatPage() {
   const location = useLocation()
   const analysisId = (location.state as { analysisId?: number | null } | null)?.analysisId ?? null
 
-  const [messages, setMessages] = useState<Message[]>([])
+  // 인사말은 서버와 무관한 고정 문구라 첫 렌더부터 들고 시작한다.
+  // (예전엔 effect에서 setState로 넣어 렌더가 한 번 더 돌았다.)
+  const [messages, setMessages] = useState<Message[]>(() => [createMessage('ASSISTANT', GREETING)])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    setMessages([createMessage('ASSISTANT', GREETING)])
-  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -62,9 +61,11 @@ export default function ChatPage() {
         analysisId,
         updatedMessages.map(({ role, content }) => ({ role, content }))
       )
-      setMessages((prev) => [...prev, createMessage('ASSISTANT', reply.content)])
-    } catch {
-      setErrorMessage('응답을 가져오는 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.')
+      setMessages((prev) => [...prev, createMessage('ASSISTANT', reply)])
+    } catch (error) {
+      // 챗봇 실패는 서버(AI 연결·타임아웃)와 클라이언트 어느 쪽이든 날 수 있다.
+      // 서버가 이유를 한국어로 실어 보내면 그걸 그대로 보여줘야 원인을 짚을 수 있다.
+      setErrorMessage(apiErrorMessage(error) ?? '응답을 가져오는 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.')
     } finally {
       setIsTyping(false)
     }
