@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
 import TopNav from './components/TopNav'
 import PrivateRoute from './components/PrivateRoute'
 import LoginPage from './pages/LoginPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import OnboardingPage from './pages/OnboardingPage'
 import HomePage from './pages/HomePage'
 import HistoryPage from './pages/HistoryPage'
@@ -42,6 +43,8 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          {/* 로그인을 못 하는 사람이 오는 화면이라 상단 네비 없이 공개로 둔다. */}
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           <Route element={<NavLayout />}>
             <Route path="/" element={<OnboardingPage />} />
