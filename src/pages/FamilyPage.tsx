@@ -10,7 +10,8 @@ import {
   postFamilyInvite,
 } from '../api/family'
 import type { FamilyInvite, FamilyLogItem, FamilyMember } from '../api/family'
-import type { PhishingCategory, RiskLevel } from '../api/analyses'
+import { CATEGORY_LABEL } from '../api/analyses'
+import type { RiskLevel } from '../api/analyses'
 
 type UiRiskLevel = 'high' | 'med' | 'low'
 
@@ -36,20 +37,23 @@ const RISK_META: Record<UiRiskLevel, { label: string; badge: string; box: string
 
 const RISK_LEVEL_MAP: Record<RiskLevel, UiRiskLevel> = { HIGH: 'high', MEDIUM: 'med', LOW: 'low' }
 
-const CATEGORY_LABEL: Record<PhishingCategory, string> = {
-  FINANCIAL_INSTITUTION: '금융기관 사칭',
-  GOVERNMENT_AGENCY: '정부기관 사칭',
-  LOAN: '대출 사기',
-  JOB: '일자리 사기',
-  DELIVERY: '택배 사칭',
-  MESSENGER: '메신저 사칭',
-  OTHER: '기타',
-}
-
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '날짜 없음'
   const [year, month, day] = dateStr.split('T')[0].split('-')
   return `${year}.${month}.${day}`
+}
+
+/**
+ * 초대 코드 만료까지 남은 시간을 `분:초`로 적는다.
+ *
+ * 유효기간이 **10분**뿐이라(`FamilyService.INVITE_EXPIRE_MINUTES`) 날짜만 적으면
+ * 하루 종일 쓸 수 있다는 오해를 준다. 앱도 같은 화면에서 남은 시간을 센다.
+ */
+function formatRemaining(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  const minutes = Math.floor(total / 60)
+  const seconds = total % 60
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
 function maskPhone(phone: string): string {
@@ -94,6 +98,26 @@ export default function FamilyPage() {
   const [editError, setEditError] = useState<string | null>(null)
   const [editSubmitting, setEditSubmitting] = useState(false)
 
+  /**
+   * 카운트다운의 '지금'. 초마다 흐르는 시계는 React 밖의 것이라
+   * 타이머 콜백에서만 갱신하고, 남은 시간은 렌더할 때 빼서 구한다.
+   * 초대가 없는 동안은 타이머를 돌리지 않으므로, 새로 발급할 때
+   * 핸들러에서 한 번 맞춰준다(안 그러면 마운트 시각에 멈춰 있다).
+   */
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    if (!invite) return
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [invite])
+
+  const inviteExpiresAt = invite ? new Date(invite.expiresAt).getTime() : Number.NaN
+  // 서버가 이상한 시각을 주면 카운트다운 대신 만료 안내로 떨어뜨린다.
+  const inviteRemainingMs = Number.isNaN(inviteExpiresAt)
+    ? 0
+    : Math.max(0, inviteExpiresAt - now)
+
   useEffect(() => {
     let active = true
     setMembersLoading(true)
@@ -127,6 +151,8 @@ export default function FamilyPage() {
     try {
       const result = await postFamilyInvite()
       setInvite(result)
+      // 발급 직전까지 타이머가 멈춰 있었으니 시계를 지금으로 맞춘다.
+      setNow(Date.now())
     } catch {
       setInviteError('초대 코드를 발급하지 못했습니다.')
     } finally {
@@ -288,7 +314,16 @@ export default function FamilyPage() {
               />
             </div>
             <p className="text-caption text-t3 text-center">
-              QR을 스캔하거나 코드를 공유해 가족을 초대하세요 · {formatDate(invite.expiresAt)}까지 유효
+              {inviteRemainingMs > 0 ? (
+                <>
+                  QR을 스캔하거나 코드를 공유해 가족을 초대하세요 ·{' '}
+                  <span className="text-t1">{formatRemaining(inviteRemainingMs)}</span> 뒤 만료
+                </>
+              ) : (
+                <span className="text-high-text">
+                  초대 코드가 만료됐어요. 다시 발급해 주세요.
+                </span>
+              )}
             </p>
           </div>
         )}

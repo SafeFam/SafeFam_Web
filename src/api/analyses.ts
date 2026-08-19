@@ -85,6 +85,20 @@ export type PhishingCategory =
   | 'MESSENGER'
   | 'OTHER'
 
+/**
+ * 피싱 유형의 한국어 이름. 유형을 보여주는 화면이 여럿이라 여기 한 벌만 둔다.
+ * (홈·가족·이력에 각자 복사본이 있었다.)
+ */
+export const CATEGORY_LABEL: Record<PhishingCategory, string> = {
+  FINANCIAL_INSTITUTION: '금융기관 사칭',
+  GOVERNMENT_AGENCY: '정부기관 사칭',
+  LOAN: '대출 사기',
+  JOB: '일자리 사기',
+  DELIVERY: '택배 사칭',
+  MESSENGER: '메신저 사칭',
+  OTHER: '기타',
+}
+
 export interface Indicator {
   type: string
   description: string
@@ -133,6 +147,7 @@ export interface AnalysisListParams {
   page?: number
   size?: number
   riskLevel?: RiskLevel
+  category?: PhishingCategory
   from?: string
   to?: string
 }
