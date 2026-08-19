@@ -79,7 +79,7 @@ export default function LoginPage() {
           로그인
         </button>
         <button
-          onClick={() => {/* TODO: 비밀번호 재설정 */}}
+          onClick={() => navigate('/reset-password')}
           className="text-body text-t2 mt-1 hover:text-blue"
         >
           비밀번호를 잊으셨나요?
