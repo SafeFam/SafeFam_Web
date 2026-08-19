@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IoTrashOutline } from 'react-icons/io5'
 import {
+  CATEGORY_LABEL,
   FEEDBACK_OPTIONS,
   getAnalysis,
   getAnalysisList,
@@ -12,12 +13,14 @@ import type {
   AnalysisDetail,
   AnalysisListItem,
   FeedbackType,
+  PhishingCategory,
   RiskLevel,
 } from '../api/analyses'
 
 type UiRiskLevel = 'high' | 'med' | 'low'
 type PeriodFilter = '7' | '30' | '90' | 'all'
 type RiskFilter = 'all' | UiRiskLevel
+type CategoryFilter = 'all' | PhishingCategory
 
 const PAGE_SIZE = 20
 
@@ -52,6 +55,15 @@ const RISK_OPTIONS: { value: RiskFilter; label: string }[] = [
   { value: 'low', label: '안전' },
 ]
 
+// 유형 목록은 CATEGORY_LABEL에서 그대로 따온다. 백엔드에 유형이 늘면 여기도 같이 는다.
+const CATEGORY_OPTIONS: { value: CategoryFilter; label: string }[] = [
+  { value: 'all', label: '전체 유형' },
+  ...(Object.keys(CATEGORY_LABEL) as PhishingCategory[]).map((value) => ({
+    value,
+    label: CATEGORY_LABEL[value],
+  })),
+]
+
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '날짜 없음'
   const [year, month, day] = dateStr.split('T')[0].split('-')
@@ -78,6 +90,7 @@ export default function HistoryPage() {
   const navigate = useNavigate()
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all')
   const [riskFilter, setRiskFilter] = useState<RiskFilter>('all')
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
 
   const [items, setItems] = useState<AnalysisListItem[]>([])
   const [page, setPage] = useState(0)
@@ -109,6 +122,7 @@ export default function HistoryPage() {
       page: 0,
       size: PAGE_SIZE,
       riskLevel: riskFilter !== 'all' ? RISK_LEVEL_TO_API[riskFilter] : undefined,
+      category: categoryFilter !== 'all' ? categoryFilter : undefined,
       from,
       to,
     })
@@ -121,7 +135,7 @@ export default function HistoryPage() {
       .catch(() => { if (active) setError('이력을 불러오지 못했습니다.') })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [periodFilter, riskFilter])
+  }, [periodFilter, riskFilter, categoryFilter])
 
   const handleLoadMore = async () => {
     if (loadingMore || last) return
@@ -134,6 +148,7 @@ export default function HistoryPage() {
         page: nextPage,
         size: PAGE_SIZE,
         riskLevel: riskFilter !== 'all' ? RISK_LEVEL_TO_API[riskFilter] : undefined,
+        category: categoryFilter !== 'all' ? categoryFilter : undefined,
         from,
         to,
       })
@@ -243,6 +258,19 @@ export default function HistoryPage() {
             </button>
           ))}
         </div>
+        <div className="flex items-center gap-2 overflow-x-auto">
+          {CATEGORY_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setCategoryFilter(option.value)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-section border ${
+                categoryFilter === option.value ? 'bg-t1 text-white border-t1' : 'bg-white text-t2 border-line'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="flex flex-col gap-2">
@@ -278,7 +306,13 @@ export default function HistoryPage() {
               className="text-left bg-surface rounded-2xl border border-line p-4 flex flex-col gap-2 cursor-pointer"
             >
               <div className="flex items-center justify-between">
-                <span className="text-caption text-t3">{formatDate(item.analyzedAt ?? item.receivedAt)}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="text-caption text-t3">{formatDate(item.analyzedAt ?? item.receivedAt)}</span>
+                  {/* 유형으로 거를 수 있게 됐으니 목록에서도 유형이 보여야 한다. */}
+                  {item.category && (
+                    <span className="truncate text-section text-t2">{CATEGORY_LABEL[item.category]}</span>
+                  )}
+                </span>
                 <div className="flex items-center gap-2">
                   {uiRiskLevel && (
                     <span className={`text-section px-3 py-1 rounded-full ${RISK_META[uiRiskLevel].badge}`}>
