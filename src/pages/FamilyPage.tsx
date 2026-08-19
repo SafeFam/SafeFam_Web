@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IoCopyOutline, IoPencilOutline, IoTrashOutline } from 'react-icons/io5'
+import { QRCodeSVG } from 'qrcode.react'
 import {
   deleteFamilyMember,
   getFamilyMembers,
@@ -59,30 +60,6 @@ function maskPhone(phone: string): string {
 
 function memberDisplayName(member: FamilyMember): string {
   return member.wardName ?? maskPhone(member.wardPhone)
-}
-
-function hashCode(str: string): number {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i)
-    hash |= 0
-  }
-  return hash
-}
-
-function buildQrMatrix(seed: string, size = 9): boolean[][] {
-  const matrix: boolean[][] = Array.from({ length: size }, (_, r) =>
-    Array.from({ length: size }, (_, c) => hashCode(`${seed}-${r}-${c}`) % 3 === 0)
-  )
-  const applyFinder = (row0: number, col0: number) => {
-    for (let r = 0; r < 3; r++)
-      for (let c = 0; c < 3; c++)
-        matrix[row0 + r][col0 + c] = !(r === 1 && c === 1)
-  }
-  applyFinder(0, 0)
-  applyFinder(0, size - 3)
-  applyFinder(size - 3, 0)
-  return matrix
 }
 
 export default function FamilyPage() {
@@ -290,20 +267,26 @@ export default function FamilyPage() {
                 {copied ? '복사됨' : '복사'}
               </button>
             </div>
-            <svg
-              viewBox="0 0 9 9"
-              shapeRendering="crispEdges"
-              className="w-32 h-32 bg-white rounded-xl border border-line p-2 text-t1"
-              role="img"
-              aria-label={`초대 코드 ${invite.inviteCode} QR 코드`}
-            >
-              {buildQrMatrix(invite.qrToken).map((row, r) =>
-                row.map((filled, c) =>
-                  // 색은 svg에 건 text-t1을 currentColor로 물려받는다(토큰 하드코딩 금지).
-                  filled ? <rect key={`${r}-${c}`} x={c} y={r} width={1} height={1} fill="currentColor" /> : null
-                )
-              )}
-            </svg>
+            {/*
+              앱 스캐너는 읽어낸 원문을 그대로 qrToken으로 서버에 넘긴다
+              (SafeFam_FE `qr_scan_screen.dart` → `FamilyApi.linkByQr`).
+              그러니 토큰 문자열만 담고 접두사·URL 같은 장식을 붙이면 안 된다.
+            */}
+            <div className="bg-white rounded-xl border border-line p-3 text-t1">
+              <QRCodeSVG
+                value={invite.qrToken}
+                size={160}
+                // 화면을 카메라로 찍는 상황이라 반사·모아레로 일부가 뭉갠다.
+                // 오류정정을 M으로 올리고 규격상 필수인 여백 4모듈을 확보해 인식률을 지킨다.
+                level="M"
+                marginSize={4}
+                // 토큰 하드코딩을 피하려고 부모의 text-t1을 currentColor로 물려받는다.
+                // 배경은 감싼 div의 bg-white가 맡는다.
+                fgColor="currentColor"
+                bgColor="transparent"
+                title={`초대 코드 ${invite.inviteCode} QR 코드`}
+              />
+            </div>
             <p className="text-caption text-t3 text-center">
               QR을 스캔하거나 코드를 공유해 가족을 초대하세요 · {formatDate(invite.expiresAt)}까지 유효
             </p>
