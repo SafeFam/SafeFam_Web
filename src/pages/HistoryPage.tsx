@@ -10,6 +10,7 @@ import {
   deleteAnalysis,
   displayExplanation,
   failedTrackLabels,
+  displayIndicatorDescription,
   presentableEvidenceCards,
   SCORE_BREAKDOWN_LABEL,
 } from '../api/analyses'
@@ -118,7 +119,9 @@ export default function HistoryPage() {
   // 못 돌렸다'는 알림이고 description이 영어 + 내부 엔진명이라, 그대로 그리면
   // 사용자에게 `URL:VIRUSTOTAL` 같은 문자열이 나간다(홈은 이미 걸러내고 있었다).
   const detailSignals = (selectedDetail?.indicators ?? []).filter(
-    (indicator) => indicator.type !== 'ANALYSIS_TRACK_FAILURE'
+    (indicator) =>
+      indicator.type !== 'ANALYSIS_TRACK_FAILURE' &&
+      displayIndicatorDescription(indicator.description) !== ''
   )
   // 부분성공/실패 안내. 홈에는 있었는데 이력 상세에는 없어서, 같은 분석을
   // 이력에서 열면 '일부 검사를 못 돌렸다'는 사실이 통째로 사라졌다 — 점수만
@@ -467,7 +470,7 @@ export default function HistoryPage() {
                         {detailSignals.map((indicator, i) => (
                           <div key={i} className="bg-white/70 rounded-xl border border-line p-3">
                             <p className="text-body-strong text-t1">{INDICATOR_TYPE_LABEL[indicator.type] ?? indicator.type}</p>
-                            <p className="text-caption text-t2 mt-1">{indicator.description}</p>
+                            <p className="text-caption text-t2 mt-1">{displayIndicatorDescription(indicator.description)}</p>
                           </div>
                         ))}
                       </div>

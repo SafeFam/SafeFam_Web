@@ -182,6 +182,36 @@ export const SCORE_BREAKDOWN_LABEL: Record<keyof ScoreBreakdown, string> = {
  * 영어 문구 목록을 쫓아다니는 것보다 이쪽이 덜 깨진다(AI가 내부 문구를 새로
  * 추가해도 자동으로 걸린다).
  */
+/** 서버가 지표 설명 앞에 붙이는 내부 접두사. 뒤 내용은 한국어라 한글 판별로는 안 걸린다. */
+const INTERNAL_INDICATOR_PREFIXES = [
+  'Matched rule:',
+  'Analysis track unavailable:',
+]
+
+/**
+ * 화면에 쓸 지표 설명. **`indicator.description`을 직접 쓰지 말고 이걸 쓴다.**
+ *
+ * 서버가 내부 문구를 그대로 실어 보내는 자리다. 실제 분석에서 확인된 것:
+ *  - `"The confident stacking model decision was used."`
+ *    (SafeFam_AI `hybrid_analyzer.py`의 폴백 `reason`)
+ *  - `"Matched rule: 금융기관/공공기관 명칭 언급"`
+ *    (접두사는 **SafeFam_BE** `AnalysisResultApplyService`가 붙인다)
+ *
+ * 접두사는 벗기고, 그러고도 한글이 없으면 빈 문자열을 돌려준다(렌더하지 않기 위해).
+ */
+export function displayIndicatorDescription(
+  description: string | null | undefined
+): string {
+  let text = description?.trim() ?? ''
+  for (const prefix of INTERNAL_INDICATOR_PREFIXES) {
+    if (text.toLowerCase().startsWith(prefix.toLowerCase())) {
+      text = text.slice(prefix.length).trim()
+      break
+    }
+  }
+  return /[가-힣]/.test(text) ? text : ''
+}
+
 /**
  * 화면·공유에 쓸 설명. **`explanation`을 직접 쓰지 말고 이걸 쓴다.**
  *
