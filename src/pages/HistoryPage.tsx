@@ -9,6 +9,7 @@ import {
   postFeedback,
   deleteAnalysis,
   displayExplanation,
+  failedTrackLabels,
   presentableEvidenceCards,
   SCORE_BREAKDOWN_LABEL,
 } from '../api/analyses'
@@ -119,6 +120,21 @@ export default function HistoryPage() {
   const detailSignals = (selectedDetail?.indicators ?? []).filter(
     (indicator) => indicator.type !== 'ANALYSIS_TRACK_FAILURE'
   )
+  // 부분성공/실패 안내. 홈에는 있었는데 이력 상세에는 없어서, 같은 분석을
+  // 이력에서 열면 '일부 검사를 못 돌렸다'는 사실이 통째로 사라졌다 — 점수만
+  // 보이니 낮게 나온 결과가 '안전'으로 읽힌다.
+  const detailPartial = selectedDetail?.status === 'PARTIAL_SUCCESS'
+  const detailFailed = selectedDetail?.status === 'FAILED'
+  const detailMissingLayers = (() => {
+    const fromField = failedTrackLabels(selectedDetail?.failedTracks ?? null)
+    if (fromField.length > 0) return fromField
+    const fromIndicators = (selectedDetail?.indicators ?? [])
+      .filter((indicator) => indicator.type === 'ANALYSIS_TRACK_FAILURE')
+      .map((indicator) =>
+        indicator.description.replace(/^Analysis track unavailable:\s*/i, '')
+      )
+    return failedTrackLabels(fromIndicators)
+  })()
   // 3분할 점수. 값이 없는 트랙은 0이 아니라 '—'로 둔다.
   const detailBreakdown = (
     Object.keys(SCORE_BREAKDOWN_LABEL) as (keyof ScoreBreakdown)[]
@@ -400,6 +416,31 @@ export default function HistoryPage() {
             {!detailLoading && selectedDetail && (
               <>
                 <span className="text-caption text-t3">{formatDate(selectedDetail.analyzedAt)}</span>
+
+                {detailPartial && (
+                  <div className="bg-med/10 border border-med rounded-2xl p-4 flex flex-col gap-1">
+                    <p className="text-body-strong text-t1">일부 분석을 마치지 못했어요</p>
+                    <p className="text-body text-t2">
+                      {detailMissingLayers.length > 0
+                        ? `${detailMissingLayers.join(' · ')}을(를) 확인하지 못했습니다. `
+                        : '일부 검사를 확인하지 못했습니다. '}
+                      아래 결과는 남은 검사만으로 판단한 것이라, 실제 위험도가 더 높을 수 있어요.
+                      링크·전화에 응답하기 전에 공식 번호로 한 번 더 확인하세요.
+                    </p>
+                  </div>
+                )}
+
+                {/* 실패는 '안전'이 아니다. 점수·등급이 통째로 비어 있어 아무것도
+                    안 그리면 빈 화면이 되고, 그게 '문제 없음'으로 읽힌다. */}
+                {detailFailed && (
+                  <div className="bg-high-bg border border-high-line rounded-2xl p-4 flex flex-col gap-1">
+                    <p className="text-body-strong text-high-text">분석하지 못했어요</p>
+                    <p className="text-body text-t2">
+                      이 문자는 검사를 끝내지 못했습니다. <strong>안전하다는 뜻이 아닙니다.</strong>
+                      링크·전화에 응답하기 전에 공식 앱이나 대표번호로 확인하세요.
+                    </p>
+                  </div>
+                )}
 
                 {selectedDetail.riskLevel && (
                   <div className={`rounded-2xl border p-4 flex flex-col gap-3 ${RISK_META[RISK_LEVEL_MAP[selectedDetail.riskLevel]].box}`}>
