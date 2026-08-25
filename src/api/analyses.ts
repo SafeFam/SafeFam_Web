@@ -116,6 +116,35 @@ export interface PostAnalysisResult {
   status: AnalysisStatus
 }
 
+/** 사용자 언어로 정리한 위험 근거 카드(`evidenceCards`, 0~5개). */
+export interface EvidenceCard {
+  category: EvidenceCategory | string
+  title: string
+  description: string
+}
+
+/**
+ * 근거 카드 카테고리. 정본은 AI 쪽(`app/analysis/evidence.py`)이라 값이 늘 수
+ * 있으므로, 타입은 열어두고(`| string`) 모르는 값도 카드 자체는 보여준다.
+ */
+export type EvidenceCategory =
+  | 'INSTITUTION_IMPERSONATION'
+  | 'PERSONAL_INFO_REQUEST'
+  | 'DANGEROUS_URL'
+  | 'URGENCY_PRESSURE'
+  | 'AI_JUDGMENT'
+
+/**
+ * 분석 출처별 원점수(0~100). 셋 다 없을 수 있다 — 분석이 끝나기 전이면 통째로
+ * 없고, 부분성공이면 못 돌린 트랙만 null이다. **없는 값을 0으로 읽으면 안 된다**
+ * (막대가 조용히 0으로 그려진다 — 앱에서 실제로 났던 버그, SafeFam_FE #116).
+ */
+export interface ScoreBreakdown {
+  textScore: number | null
+  urlScore: number | null
+  rulesScore: number | null
+}
+
 export interface AnalysisDetail {
   analysisId: number
   status: AnalysisStatus
@@ -125,11 +154,43 @@ export interface AnalysisDetail {
   explanation: string | null
   failureCode: string | null
   failedTracks: string[] | null
-  scoreBreakdown: Record<string, number> | null
+  scoreBreakdown: ScoreBreakdown | null
+  evidenceCards: EvidenceCard[] | null
   indicators: Indicator[] | null
   urls: string[] | null
   recommendedActions: RecommendedAction[] | null
   analyzedAt: string | null
+}
+
+/** 3분할 점수 막대에 쓸 사용자 라벨. 내부 엔진명은 절대 노출하지 않는다. */
+export const SCORE_BREAKDOWN_LABEL: Record<keyof ScoreBreakdown, string> = {
+  textScore: '문자 문맥 분석',
+  urlScore: 'URL 분석',
+  rulesScore: '금융 규칙 분석',
+}
+
+/**
+ * 사용자에게 내보내도 되는 근거 카드만 남긴다.
+ *
+ * ★`AI_JUDGMENT` 카드의 설명은 AI 텍스트 분석의 `reason`을 **그대로** 옮긴
+ * 값이라, 분석기가 내부 상태를 적어 보낼 때가 있다 — "The confident stacking
+ * model decision was used." 같은 영어 문구가 실제로 온다(SafeFam_AI
+ * `hybrid_analyzer.py`, 미수정). 정작 이 기능의 이슈(AI #64)가 "내부 기술·모델
+ * 이름을 노출하지 않는다"를 제약으로 못박고 있으므로 걸러서 내보낸다.
+ *
+ * 판별은 **한글이 한 글자라도 있는지**로 한다. 카드 문구는 전부 한국어라,
+ * 영어 문구 목록을 쫓아다니는 것보다 이쪽이 덜 깨진다(AI가 내부 문구를 새로
+ * 추가해도 자동으로 걸린다).
+ */
+export function presentableEvidenceCards(
+  cards: EvidenceCard[] | null | undefined
+): EvidenceCard[] {
+  return (cards ?? []).filter(
+    (card) =>
+      card?.title?.trim() &&
+      card?.description?.trim() &&
+      /[가-힣]/.test(card.description)
+  )
 }
 
 export interface AnalysisListItem {
