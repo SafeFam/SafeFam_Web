@@ -182,6 +182,26 @@ export const SCORE_BREAKDOWN_LABEL: Record<keyof ScoreBreakdown, string> = {
  * 영어 문구 목록을 쫓아다니는 것보다 이쪽이 덜 깨진다(AI가 내부 문구를 새로
  * 추가해도 자동으로 걸린다).
  */
+/**
+ * 화면·공유에 쓸 설명. **`explanation`을 직접 쓰지 말고 이걸 쓴다.**
+ *
+ * 서버의 `explanation`은 AI 텍스트 분석의 `reason`을 그대로 옮긴 값이라
+ * (`AnalysisResultApplyService.findExplanation`), 분석기가 폴백 경로를 타면
+ * 영어 내부 문구가 들어온다 — "The confident stacking model decision was
+ * used." 같은 것이 실제로 온다(SafeFam_AI `hybrid_analyzer.py`, 미수정).
+ *
+ * 증거 카드는 통째로 숨겼지만(`presentableEvidenceCards`) 설명은 결과 화면의
+ * 핵심 문장이라 비워두면 안 된다. 그래서 한국어 안내로 갈아끼운다.
+ */
+export function displayExplanation(
+  explanation: string | null | undefined,
+  fallback = '이 문자를 왜 그렇게 판단했는지 자세한 설명을 받지 못했어요. 아래 위험 근거와 점수를 함께 확인해 주세요.'
+): string {
+  const raw = explanation?.trim() ?? ''
+  if (!raw) return ''
+  return /[가-힣]/.test(raw) ? raw : fallback
+}
+
 export function presentableEvidenceCards(
   cards: EvidenceCard[] | null | undefined
 ): EvidenceCard[] {
