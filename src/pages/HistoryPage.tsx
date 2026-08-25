@@ -8,6 +8,7 @@ import {
   getAnalysisList,
   postFeedback,
   deleteAnalysis,
+  displayExplanation,
   presentableEvidenceCards,
   SCORE_BREAKDOWN_LABEL,
 } from '../api/analyses'
@@ -349,7 +350,9 @@ export default function HistoryPage() {
                   </button>
                 </div>
               </div>
-              <p className="text-body text-t1 line-clamp-2">{item.explanation ?? '분석 결과를 확인해보세요.'}</p>
+              <p className="text-body text-t1 line-clamp-2">
+                {displayExplanation(item.explanation) || '분석 결과를 확인해보세요.'}
+              </p>
             </div>
           )
         })}
@@ -404,7 +407,9 @@ export default function HistoryPage() {
                       <span className={`shrink-0 text-section px-3 py-1 rounded-full ${RISK_META[RISK_LEVEL_MAP[selectedDetail.riskLevel]].badge}`}>
                         {RISK_META[RISK_LEVEL_MAP[selectedDetail.riskLevel]].label}
                       </span>
-                      <span className="text-body-strong">{selectedDetail.explanation}</span>
+                      <span className="text-body-strong">
+                        {displayExplanation(selectedDetail.explanation)}
+                      </span>
                     </div>
                     {detailEvidence.length > 0 && (
                       <div className="flex flex-col gap-2">
