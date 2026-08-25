@@ -9,6 +9,7 @@ import {
   hasResult,
   postAnalysis,
   postFeedback,
+  displayExplanation,
   presentableEvidenceCards,
   SCORE_BREAKDOWN_LABEL,
 } from '../api/analyses'
@@ -125,7 +126,11 @@ export default function HomePage() {
           setLoading(false)
         } else if (analysis.status === 'FAILED') {
           stopPolling()
-          setError(analysis.explanation ?? '분석에 실패했습니다.')
+          // 실패 사유도 AI가 만든 자유 문자열이라 영어가 올 수 있다.
+          setError(
+            displayExplanation(analysis.explanation, '분석에 실패했습니다.') ||
+              '분석에 실패했습니다.'
+          )
           setLoading(false)
         } else if (attempts >= MAX_POLL_ATTEMPTS) {
           stopPolling()
@@ -301,7 +306,9 @@ export default function HomePage() {
                 <span className={`text-section px-3 py-1 rounded-full ${RISK_META[uiRiskLevel].badge}`}>
                   {RISK_META[uiRiskLevel].label}
                 </span>
-                <span className="text-body-strong">{result.explanation}</span>
+                <span className="text-body-strong">
+                  {displayExplanation(result.explanation)}
+                </span>
               </div>
               {riskSignals.length > 0 && (
                 <div className="flex flex-col gap-2">
