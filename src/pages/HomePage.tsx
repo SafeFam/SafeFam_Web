@@ -9,11 +9,14 @@ import {
   hasResult,
   postAnalysis,
   postFeedback,
+  presentableEvidenceCards,
+  SCORE_BREAKDOWN_LABEL,
 } from '../api/analyses'
 import type {
   AnalysisDetail,
   FeedbackType,
   RiskLevel,
+  ScoreBreakdown,
 } from '../api/analyses'
 import { getTrends } from '../api/statistics'
 import type { TrendsData } from '../api/statistics'
@@ -198,6 +201,19 @@ export default function HomePage() {
     return failedTrackLabels(fromIndicators)
   })()
   const isPartial = result?.status === 'PARTIAL_SUCCESS'
+  // 서버가 사용자 언어로 정리해 보낸 근거. indicators(내부 신호 타입)와는 다른
+  // 층위라 둘 다 보여준다 — 이쪽이 사람이 읽는 문장이라 위에 놓는다.
+  const evidenceCards = presentableEvidenceCards(result?.evidenceCards)
+  // 3분할 점수. 값이 있는 트랙만 막대로 그리고, 없는 트랙은 '—'로 남긴다.
+  // 부분성공에서 못 돌린 트랙이 0점으로 보이면 안 된다.
+  const breakdownRows = (
+    Object.keys(SCORE_BREAKDOWN_LABEL) as (keyof ScoreBreakdown)[]
+  ).map((key) => ({
+    key,
+    label: SCORE_BREAKDOWN_LABEL[key],
+    score: result?.scoreBreakdown?.[key] ?? null,
+  }))
+  const hasBreakdown = breakdownRows.some((row) => row.score !== null)
 
   return (
     <div className="min-h-screen bg-white px-5 py-6 flex flex-col gap-6">
@@ -228,7 +244,11 @@ export default function HomePage() {
           className="w-full px-4 py-3 rounded-xl border border-line text-t1 placeholder-t3 resize-none focus:outline-none focus:border-blue bg-white"
         />
         <p className="text-caption text-t2 flex items-center gap-1">
-          🔒 붙여넣은 내용은 이름·번호가 가려진 뒤 안전하게 분석돼요
+          {/* 서버가 실제로 가리는 건 번호류(주민·카드·전화·계좌)와 이메일뿐이다.
+              이름은 안 가리고, 링크는 검사에 필요해 일부러 남긴다
+              (SafeFam_BE PiiMaskingService). 가리지도 않는 걸 가린다고 적으면
+              그게 곧 거짓 약속이라 실제 동작대로 적는다. */}
+          🔒 붙여넣은 내용은 전화·계좌·카드번호가 가려진 뒤 분석돼요
         </p>
         <button
           onClick={handleAnalyze}
@@ -296,6 +316,46 @@ export default function HomePage() {
                 </div>
               )}
             </div>
+
+            {hasBreakdown && (
+              <div className="bg-surface rounded-2xl border border-line p-4 flex flex-col gap-3">
+                <p className="text-body-strong text-t1">점수는 이렇게 나왔어요</p>
+                {breakdownRows.map((row) => (
+                  <div key={row.key} className="flex flex-col gap-1">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-body text-t2">{row.label}</span>
+                      <span className="text-body-strong text-t1">
+                        {row.score === null ? '—' : row.score}
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-tint-line overflow-hidden">
+                      {/* 값이 없는 트랙은 막대를 그리지 않는다(0점과 구분). */}
+                      {row.score !== null && (
+                        <div
+                          className="h-full rounded-full bg-blue"
+                          style={{ width: `${Math.min(100, Math.max(0, row.score))}%` }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <p className="text-caption text-t3">
+                  세 가지 분석을 합쳐 종합 위험 점수를 계산했어요.
+                </p>
+              </div>
+            )}
+
+            {evidenceCards.length > 0 && (
+              <div className="bg-surface rounded-2xl border border-line p-4 flex flex-col gap-2">
+                <p className="text-body-strong text-t1">이렇게 판단했어요</p>
+                {evidenceCards.map((card, i) => (
+                  <div key={i} className="bg-white rounded-xl border border-line p-3">
+                    <p className="text-body-strong text-t1">{card.title}</p>
+                    <p className="text-caption text-t2 mt-1">{card.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {result.recommendedActions && result.recommendedActions.length > 0 && (
               <div className="bg-high-bg border border-high-line rounded-2xl p-4 flex flex-col gap-2">

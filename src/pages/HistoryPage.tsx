@@ -8,6 +8,8 @@ import {
   getAnalysisList,
   postFeedback,
   deleteAnalysis,
+  presentableEvidenceCards,
+  SCORE_BREAKDOWN_LABEL,
 } from '../api/analyses'
 import type {
   AnalysisDetail,
@@ -15,6 +17,7 @@ import type {
   FeedbackType,
   PhishingCategory,
   RiskLevel,
+  ScoreBreakdown,
 } from '../api/analyses'
 
 type UiRiskLevel = 'high' | 'med' | 'low'
@@ -105,6 +108,24 @@ export default function HistoryPage() {
   const [selectedDetail, setSelectedDetail] = useState<AnalysisDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
+
+  // 서버가 사용자 언어로 정리해 보낸 근거 카드. 내부 문구가 실려 오는 경우는
+  // 걸러진다(presentableEvidenceCards 설명 참고).
+  const detailEvidence = presentableEvidenceCards(selectedDetail?.evidenceCards)
+  // 위험 신호에는 실패 통지를 섞지 않는다. ANALYSIS_TRACK_FAILURE는 '이 분석을
+  // 못 돌렸다'는 알림이고 description이 영어 + 내부 엔진명이라, 그대로 그리면
+  // 사용자에게 `URL:VIRUSTOTAL` 같은 문자열이 나간다(홈은 이미 걸러내고 있었다).
+  const detailSignals = (selectedDetail?.indicators ?? []).filter(
+    (indicator) => indicator.type !== 'ANALYSIS_TRACK_FAILURE'
+  )
+  // 3분할 점수. 값이 없는 트랙은 0이 아니라 '—'로 둔다.
+  const detailBreakdown = (
+    Object.keys(SCORE_BREAKDOWN_LABEL) as (keyof ScoreBreakdown)[]
+  ).map((key) => ({
+    key,
+    label: SCORE_BREAKDOWN_LABEL[key],
+    score: selectedDetail?.scoreBreakdown?.[key] ?? null,
+  }))
 
   const [feedback, setFeedback] = useState<FeedbackType | null>(null)
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
@@ -385,9 +406,19 @@ export default function HistoryPage() {
                       </span>
                       <span className="text-body-strong">{selectedDetail.explanation}</span>
                     </div>
-                    {selectedDetail.indicators && selectedDetail.indicators.length > 0 && (
+                    {detailEvidence.length > 0 && (
                       <div className="flex flex-col gap-2">
-                        {selectedDetail.indicators.map((indicator, i) => (
+                        {detailEvidence.map((card, i) => (
+                          <div key={`ev-${i}`} className="bg-white/70 rounded-xl border border-line p-3">
+                            <p className="text-body-strong text-t1">{card.title}</p>
+                            <p className="text-caption text-t2 mt-1">{card.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {detailSignals.length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        {detailSignals.map((indicator, i) => (
                           <div key={i} className="bg-white/70 rounded-xl border border-line p-3">
                             <p className="text-body-strong text-t1">{INDICATOR_TYPE_LABEL[indicator.type] ?? indicator.type}</p>
                             <p className="text-caption text-t2 mt-1">{indicator.description}</p>
@@ -395,6 +426,30 @@ export default function HistoryPage() {
                         ))}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {detailBreakdown.some((row) => row.score !== null) && (
+                  <div className="bg-surface rounded-2xl border border-line p-4 flex flex-col gap-3">
+                    <p className="text-body-strong text-t1">점수는 이렇게 나왔어요</p>
+                    {detailBreakdown.map((row) => (
+                      <div key={row.key} className="flex flex-col gap-1">
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-body text-t2">{row.label}</span>
+                          <span className="text-body-strong text-t1">
+                            {row.score === null ? '—' : row.score}
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full bg-tint-line overflow-hidden">
+                          {row.score !== null && (
+                            <div
+                              className="h-full rounded-full bg-blue"
+                              style={{ width: `${Math.min(100, Math.max(0, row.score))}%` }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
 
