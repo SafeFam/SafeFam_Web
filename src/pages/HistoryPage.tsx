@@ -440,14 +440,15 @@ export default function HistoryPage() {
                             {row.score === null ? '—' : row.score}
                           </span>
                         </div>
-                        <div className="h-2 rounded-full bg-tint-line overflow-hidden">
-                          {row.score !== null && (
+                        {/* 빈 레일은 0점 막대와 구분이 안 된다(홈과 동일). */}
+                        {row.score !== null && (
+                          <div className="h-2 rounded-full bg-tint-line overflow-hidden">
                             <div
                               className="h-full rounded-full bg-blue"
                               style={{ width: `${Math.min(100, Math.max(0, row.score))}%` }}
                             />
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

@@ -328,15 +328,17 @@ export default function HomePage() {
                         {row.score === null ? '—' : row.score}
                       </span>
                     </div>
-                    <div className="h-2 rounded-full bg-tint-line overflow-hidden">
-                      {/* 값이 없는 트랙은 막대를 그리지 않는다(0점과 구분). */}
-                      {row.score !== null && (
+                    {/* 값이 없는 트랙은 **레일까지** 안 그린다. 빈 레일만 남기면
+                        0점 막대와 똑같이 보여서, 못 돌린 검사가 '0점으로 안전'
+                        처럼 읽힌다. */}
+                    {row.score !== null && (
+                      <div className="h-2 rounded-full bg-tint-line overflow-hidden">
                         <div
                           className="h-full rounded-full bg-blue"
                           style={{ width: `${Math.min(100, Math.max(0, row.score))}%` }}
                         />
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 ))}
                 <p className="text-caption text-t3">
