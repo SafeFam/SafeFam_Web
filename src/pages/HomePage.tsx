@@ -10,6 +10,7 @@ import {
   postAnalysis,
   postFeedback,
   displayExplanation,
+  displayIndicatorDescription,
   presentableEvidenceCards,
   SCORE_BREAKDOWN_LABEL,
 } from '../api/analyses'
@@ -190,8 +191,12 @@ export default function HomePage() {
 
   // 위험 근거 카드에는 실패 통지를 섞지 않는다. ANALYSIS_TRACK_FAILURE는 위험 신호가
   // 아니라 '이 분석을 못 돌렸다'는 알림이고, description이 영어 + 내부 엔진명이다.
+  // 설명이 통째로 내부 문구인 지표도 뺀다 — 실제 분석에서 "The confident
+  // stacking model decision was used."가 이 자리에 그대로 떴다.
   const riskSignals = (result?.indicators ?? []).filter(
-    (indicator) => indicator.type !== 'ANALYSIS_TRACK_FAILURE'
+    (indicator) =>
+      indicator.type !== 'ANALYSIS_TRACK_FAILURE' &&
+      displayIndicatorDescription(indicator.description) !== ''
   )
   // 빠진 분석 레이어. 전용 필드를 먼저 쓰고, 비어 있으면 지표에서 뽑는다
   // (서버가 지표 문자열을 파싱해 필드를 만들기 때문에 한쪽만 비는 경우가 있다).
@@ -317,7 +322,7 @@ export default function HomePage() {
                       <p className="text-body-strong text-t1">
                         {INDICATOR_TYPE_LABEL[indicator.type] ?? indicator.type}
                       </p>
-                      <p className="text-caption text-t2 mt-1">{indicator.description}</p>
+                      <p className="text-caption text-t2 mt-1">{displayIndicatorDescription(indicator.description)}</p>
                     </div>
                   ))}
                 </div>
