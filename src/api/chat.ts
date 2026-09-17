@@ -16,10 +16,12 @@ export interface ChatMessage {
  * `analysisId`를 실으면 그 분석을 상담 컨텍스트로 쓴다. 없으면 일반 상담.
  */
 export async function postChat(analysisId: number | null, messages: ChatMessage[]): Promise<string> {
-  const { data } = await api.post<ApiResponse<{ message: string }>>('/api/v1/chat', {
-    analysisId,
-    messages,
-  })
+  const { data } = await api.post<ApiResponse<{ message: string }>>(
+    '/api/v1/chat',
+    { analysisId, messages },
+    // AI 응답 대기(서버 기본 60초)를 고려해 앱과 동일하게 65초를 허용한다.
+    { timeout: 65000 },
+  )
 
   const reply = data.data?.message?.trim()
   // 빈 답변을 그대로 렌더하면 원인 모를 빈 말풍선이 남는다. 에러로 올려 안내 문구를 띄운다.
