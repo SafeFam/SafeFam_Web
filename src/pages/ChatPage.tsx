@@ -59,10 +59,14 @@ export default function ChatPage() {
     try {
       const reply = await postChat(
         analysisId,
-        updatedMessages.map(({ role, content }) => ({ role, content }))
+        // 첫 인사말은 화면 안내이며 실제 AI 대화가 아니다. USER 발화부터 보낸다.
+        updatedMessages.slice(1).map(({ role, content }) => ({ role, content }))
       )
       setMessages((prev) => [...prev, createMessage('ASSISTANT', reply)])
     } catch (error) {
+      // 실패한 발화가 다음 요청에 중복되거나 USER가 연속되지 않도록 복원한다.
+      setMessages(messages)
+      setInput(trimmed)
       // 챗봇 실패는 서버(AI 연결·타임아웃)와 클라이언트 어느 쪽이든 날 수 있다.
       // 서버가 이유를 한국어로 실어 보내면 그걸 그대로 보여줘야 원인을 짚을 수 있다.
       setErrorMessage(apiErrorMessage(error) ?? '응답을 가져오는 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.')
